@@ -1,6 +1,8 @@
 package com.example.gymbro;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
@@ -21,8 +23,11 @@ public class ExerciseActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private TextView textViewTitle;
+    private ImageButton buttonEditTemplate;
     private AppDatabase db;
     private ExerciseAdapter adapter;
+    private int templateId;
+    private String templateName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,16 +44,25 @@ public class ExerciseActivity extends AppCompatActivity {
 
         recyclerView = findViewById(R.id.recyclerViewExercises);
         textViewTitle = findViewById(R.id.textViewWorkoutTitle);
+        buttonEditTemplate = findViewById(R.id.buttonEditTemplate);
+        
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         db = AppDatabase.getDatabase(this);
 
-        int templateId = getIntent().getIntExtra("TEMPLATE_ID", -1);
-        String templateName = getIntent().getStringExtra("TEMPLATE_NAME");
+        templateId = getIntent().getIntExtra("TEMPLATE_ID", -1);
+        templateName = getIntent().getStringExtra("TEMPLATE_NAME");
 
         if (templateName != null) {
             textViewTitle.setText(templateName);
         }
+
+        buttonEditTemplate.setOnClickListener(v -> {
+            Intent intent = new Intent(ExerciseActivity.this, EditTemplateActivity.class);
+            intent.putExtra("TEMPLATE_ID", templateId);
+            intent.putExtra("TEMPLATE_NAME", templateName);
+            startActivity(intent);
+        });
 
         if (templateId != -1) {
             loadExercises(templateId);

@@ -24,13 +24,15 @@ public class TemplateExercise {
     
     public int targetSets;
     public int targetReps;
-    public int targetDuration; // Время в секундах (например, для планки)
+    public int targetDuration;
+    public int restSeconds;
 
-    public TemplateExercise(int templateId, int exerciseId, int targetSets, int targetReps, int targetDuration) {
+    public TemplateExercise(int templateId, int exerciseId, int targetSets, int targetReps, int targetDuration, int restSeconds) {
         this.templateId = templateId;
         this.exerciseId = exerciseId;
         this.targetSets = targetSets;
         this.targetReps = targetReps;
         this.targetDuration = targetDuration;
+        this.restSeconds = restSeconds;
     }
 }

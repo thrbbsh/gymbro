@@ -24,13 +24,15 @@ public class SessionExercise {
     
     public int actualSets;
     public int actualReps;
-    public int actualDuration; // Time in seconds
+    public int actualDuration;
+    public int restSeconds;
 
-    public SessionExercise(int sessionId, int exerciseId, int actualSets, int actualReps, int actualDuration) {
+    public SessionExercise(int sessionId, int exerciseId, int actualSets, int actualReps, int actualDuration, int restSeconds) {
         this.sessionId = sessionId;
         this.exerciseId = exerciseId;
         this.actualSets = actualSets;
         this.actualReps = actualReps;
         this.actualDuration = actualDuration;
+        this.restSeconds = restSeconds;
     }
 }

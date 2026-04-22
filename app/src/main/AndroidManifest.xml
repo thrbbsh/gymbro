@@ -28,6 +28,11 @@
             android:name=".ExerciseActivity"
             android:exported="false"
             android:label="Workout Details" />
+        <activity
+            android:name=".EditTemplateActivity"
+            android:exported="false"
+            android:label="Edit Template"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>
