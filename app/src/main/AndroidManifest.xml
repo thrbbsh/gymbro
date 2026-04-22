@@ -21,6 +21,10 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".StatisticsActivity"
+            android:exported="false"
+            android:label="Statistics" />
+        <activity
             android:name=".ExerciseActivity"
             android:exported="false"
             android:label="Workout Details" />

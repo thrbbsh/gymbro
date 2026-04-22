@@ -4,11 +4,7 @@ plugins {
 
 android {
     namespace = "com.example.gymbro"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.gymbro"
@@ -41,6 +37,9 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     
+    // Material Calendar View
+    implementation(libs.prolific.calendarview)
+
     // Room
     implementation(libs.room.runtime)
     annotationProcessor(libs.room.compiler)

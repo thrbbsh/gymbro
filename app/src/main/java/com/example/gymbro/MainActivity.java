@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,6 +23,7 @@ import java.util.concurrent.Executors;
 public class MainActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
+    private TextView textLoading;
     private WorkoutAdapter adapter;
     private AppDatabase db;
 
@@ -39,18 +41,46 @@ public class MainActivity extends AppCompatActivity {
 
         db = AppDatabase.getDatabase(this);
         recyclerView = findViewById(R.id.recyclerViewTemplates);
+        textLoading = findViewById(R.id.textLoadingTemplates);
+        
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        Button btnStatistics = findViewById(R.id.buttonStats);
+        btnStatistics.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, StatisticsActivity.class);
+            startActivity(intent);
+        });
 
         loadTemplates();
     }
 
     private void loadTemplates() {
-        // Load templates from database in background thread
+        // Show loading text
+        textLoading.setVisibility(View.VISIBLE);
+        recyclerView.setVisibility(View.GONE);
+
         Executors.newSingleThreadExecutor().execute(() -> {
-            List<WorkoutTemplate> templates = db.workoutDao().getAllTemplates();
+            List<WorkoutTemplate> templates;
+            
+            // Wait for DB prepopulation
+            do {
+                templates = db.workoutDao().getAllTemplates();
+                if (templates.isEmpty()) {
+                    try {
+                        Thread.sleep(500); // Check every 300ms
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        break;
+                    }
+                }
+            } while (templates.isEmpty());
+
+            List<WorkoutTemplate> finalTemplates = templates;
             runOnUiThread(() -> {
-                adapter = new WorkoutAdapter(templates, template -> {
-                    // Navigate to ExerciseActivity with template details
+                textLoading.setVisibility(View.GONE);
+                recyclerView.setVisibility(View.VISIBLE);
+                
+                adapter = new WorkoutAdapter(finalTemplates, template -> {
                     Intent intent = new Intent(MainActivity.this, ExerciseActivity.class);
                     intent.putExtra("TEMPLATE_ID", template.id);
                     intent.putExtra("TEMPLATE_NAME", template.name);
