@@ -33,6 +33,10 @@
             android:exported="false"
             android:label="Edit Template"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".activity.CommunityActivity"
+            android:exported="false"
+            android:label="Community" />
     </application>
 
 </manifest>

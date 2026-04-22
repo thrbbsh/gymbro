@@ -53,6 +53,12 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        Button btnCommunity = findViewById(R.id.buttonCommunity);
+        btnCommunity.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, CommunityActivity.class);
+            startActivity(intent);
+        });
+
         loadTemplates();
     }
 
