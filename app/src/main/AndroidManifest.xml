@@ -37,6 +37,10 @@
             android:name=".activity.CommunityActivity"
             android:exported="false"
             android:label="Community" />
+        <activity
+            android:name=".activity.ActiveTrainingActivity"
+            android:exported="false"
+            android:label="Active Training" />
     </application>
 
 </manifest>

@@ -2,6 +2,7 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.GymBro" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
+        <item name="colorOnPrimary">@color/button_text_light</item>
     </style>
 
     <style name="Theme.GymBro" parent="Base.Theme.GymBro" />
@@ -12,5 +13,12 @@
 
     <style name="CalendarDateCustom" parent="TextAppearance.AppCompat.Small">
         <item name="android:textColor">?android:attr/textColorPrimary</item>
+    </style>
+
+    <style name="GreenButtonStyle" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/green_button</item>
+        <item name="android:textColor">@color/button_text_light</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
     </style>
 </resources>

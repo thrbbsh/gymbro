@@ -2,6 +2,13 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.GymBro" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <item name="colorOnPrimary">@color/button_text_dark</item>
+    </style>
+
+    <style name="GreenButtonStyle" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/green_button</item>
+        <item name="android:textColor">@color/button_text_dark</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
     </style>
 </resources>

@@ -2,6 +2,7 @@ package com.example.gymbro.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
@@ -26,6 +27,7 @@ public class ExerciseActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private TextView textViewTitle;
     private ImageButton buttonEditTemplate;
+    private Button buttonStartWorkout;
     private AppDatabase db;
     private ExerciseAdapter adapter;
     private int templateId;
@@ -47,6 +49,7 @@ public class ExerciseActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerViewExercises);
         textViewTitle = findViewById(R.id.textViewWorkoutTitle);
         buttonEditTemplate = findViewById(R.id.buttonEditTemplate);
+        buttonStartWorkout = findViewById(R.id.buttonStartWorkout);
         
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
@@ -63,6 +66,12 @@ public class ExerciseActivity extends AppCompatActivity {
             Intent intent = new Intent(ExerciseActivity.this, EditTemplateActivity.class);
             intent.putExtra("TEMPLATE_ID", templateId);
             intent.putExtra("TEMPLATE_NAME", templateName);
+            startActivity(intent);
+        });
+
+        buttonStartWorkout.setOnClickListener(v -> {
+            Intent intent = new Intent(ExerciseActivity.this, ActiveTrainingActivity.class);
+            intent.putExtra("TEMPLATE_ID", templateId);
             startActivity(intent);
         });
 
