@@ -1,4 +1,4 @@
-package com.example.gymbro;
+package com.example.gymbro.adapter;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,6 +8,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.gymbro.R;
 import com.example.gymbro.db.model.TemplateExerciseWithDetails;
 
 import java.util.List;

@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GymBro">
         <activity
-            android:name=".MainActivity"
+            android:name=".activity.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -21,15 +21,15 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".StatisticsActivity"
+            android:name=".activity.StatisticsActivity"
             android:exported="false"
             android:label="Statistics" />
         <activity
-            android:name=".ExerciseActivity"
+            android:name=".activity.ExerciseActivity"
             android:exported="false"
             android:label="Workout Details" />
         <activity
-            android:name=".EditTemplateActivity"
+            android:name=".activity.EditTemplateActivity"
             android:exported="false"
             android:label="Edit Template"
             android:windowSoftInputMode="adjustResize" />

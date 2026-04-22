@@ -1,4 +1,4 @@
-package com.example.gymbro;
+package com.example.gymbro.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -13,6 +13,8 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.gymbro.R;
+import com.example.gymbro.adapter.ExerciseAdapter;
 import com.example.gymbro.db.AppDatabase;
 import com.example.gymbro.db.model.TemplateExerciseWithDetails;
 
