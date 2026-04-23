@@ -15,7 +15,7 @@ import java.util.List;
 
 public class ExerciseAdapter extends RecyclerView.Adapter<ExerciseAdapter.ExerciseViewHolder> {
 
-    private List<TemplateExerciseWithDetails> items;
+    private final List<TemplateExerciseWithDetails> items;
 
     public ExerciseAdapter(List<TemplateExerciseWithDetails> items) {
         this.items = items;
@@ -34,7 +34,7 @@ public class ExerciseAdapter extends RecyclerView.Adapter<ExerciseAdapter.Exerci
         
         // Exercise Info
         holder.textViewName.setText(item.exercise.name);
-        holder.textViewMuscle.setText(item.exercise.primaryMuscle);
+        holder.textViewMuscle.setText(item.exercise.target);
         
         // Target Info (Sets/Reps or Duration)
         StringBuilder target = new StringBuilder();
@@ -55,7 +55,7 @@ public class ExerciseAdapter extends RecyclerView.Adapter<ExerciseAdapter.Exerci
         return items.size();
     }
 
-    static class ExerciseViewHolder extends RecyclerView.ViewHolder {
+    public static class ExerciseViewHolder extends RecyclerView.ViewHolder {
         TextView textViewName, textViewMuscle, textViewTarget;
 
         public ExerciseViewHolder(@NonNull View itemView) {
