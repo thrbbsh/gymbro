@@ -1,6 +1,7 @@
 package com.example.gymbro.db.dao;
 
 import androidx.room.Dao;
+import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
 import androidx.room.Transaction;
@@ -18,6 +19,9 @@ public interface WorkoutDao {
 
     @Insert
     void insertTemplateExercise(TemplateExercise templateExercise);
+
+    @Delete
+    void deleteTemplateExercise(TemplateExercise templateExercise);
 
     @Query("SELECT * FROM workout_templates")
     List<WorkoutTemplate> getAllTemplates();

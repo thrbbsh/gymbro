@@ -6,7 +6,6 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -18,9 +17,15 @@ import java.util.List;
 
 public class EditExerciseAdapter extends RecyclerView.Adapter<EditExerciseAdapter.EditViewHolder> {
     private List<TemplateExerciseWithDetails> items;
+    private final OnExerciseDeleteListener deleteListener;
 
-    public EditExerciseAdapter(List<TemplateExerciseWithDetails> items) {
+    public interface OnExerciseDeleteListener {
+        void onDelete(TemplateExerciseWithDetails item);
+    }
+
+    public EditExerciseAdapter(List<TemplateExerciseWithDetails> items, OnExerciseDeleteListener deleteListener) {
         this.items = items;
+        this.deleteListener = deleteListener;
     }
 
     @NonNull
@@ -39,7 +44,6 @@ public class EditExerciseAdapter extends RecyclerView.Adapter<EditExerciseAdapte
         holder.editDuration.setText(String.valueOf(item.templateExercise.targetDuration));
         holder.editRest.setText(String.valueOf(item.templateExercise.restSeconds));
 
-        // Show/hide duration field based on targetDuration value
         if (item.templateExercise.targetDuration <= 0) {
             holder.layoutDuration.setVisibility(View.GONE);
         } else {
@@ -47,7 +51,9 @@ public class EditExerciseAdapter extends RecyclerView.Adapter<EditExerciseAdapte
         }
 
         holder.btnDelete.setOnClickListener(v -> {
-            Toast.makeText(v.getContext(), "Delete Exercise functionality coming soon", Toast.LENGTH_SHORT).show();
+            if (deleteListener != null) {
+                deleteListener.onDelete(item);
+            }
         });
     }
 

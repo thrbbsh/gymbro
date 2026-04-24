@@ -71,9 +71,16 @@ public class EditTemplateActivity extends AppCompatActivity {
         Executors.newSingleThreadExecutor().execute(() -> {
             exercises = db.workoutDao().getExercisesForTemplateWithDetails(templateId);
             runOnUiThread(() -> {
-                adapter = new EditExerciseAdapter(exercises);
+                adapter = new EditExerciseAdapter(exercises, item -> deleteExercise(item));
                 recyclerView.setAdapter(adapter);
             });
+        });
+    }
+
+    private void deleteExercise(TemplateExerciseWithDetails item) {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            db.workoutDao().deleteTemplateExercise(item.templateExercise);
+            loadExercises(); // Refresh the list
         });
     }
 
@@ -83,7 +90,6 @@ public class EditTemplateActivity extends AppCompatActivity {
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_add_exercise, null);
         dialog.setContentView(view);
 
-        // Make dialog wide enough
         if (dialog.getWindow() != null) {
             dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
