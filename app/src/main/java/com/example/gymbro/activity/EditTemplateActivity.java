@@ -11,7 +11,6 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -118,7 +117,17 @@ public class EditTemplateActivity extends AppCompatActivity {
         Executors.newSingleThreadExecutor().execute(() -> {
             exercises = db.workoutDao().getExercisesForTemplateWithDetails(templateId);
             runOnUiThread(() -> {
-                adapter = new EditExerciseAdapter(exercises, item -> deleteExercise(item));
+                adapter = new EditExerciseAdapter(exercises, new EditExerciseAdapter.OnExerciseActionListener() {
+                    @Override
+                    public void onDelete(TemplateExerciseWithDetails item) {
+                        deleteExercise(item);
+                    }
+
+                    @Override
+                    public void onUpdate(TemplateExerciseWithDetails item) {
+                        updateExerciseInDb(item.templateExercise);
+                    }
+                });
                 recyclerView.setAdapter(adapter);
             });
         });
@@ -128,6 +137,12 @@ public class EditTemplateActivity extends AppCompatActivity {
         Executors.newSingleThreadExecutor().execute(() -> {
             db.workoutDao().deleteTemplateExercise(item.templateExercise);
             loadExercises();
+        });
+    }
+
+    private void updateExerciseInDb(TemplateExercise templateExercise) {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            db.workoutDao().updateTemplateExercise(templateExercise);
         });
     }
 

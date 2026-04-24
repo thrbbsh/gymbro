@@ -27,6 +27,9 @@ public interface WorkoutDao {
     @Insert
     void insertTemplateExercise(TemplateExercise templateExercise);
 
+    @Update
+    void updateTemplateExercise(TemplateExercise templateExercise);
+
     @Delete
     void deleteTemplateExercise(TemplateExercise templateExercise);
 
