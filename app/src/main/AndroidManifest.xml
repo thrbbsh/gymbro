@@ -44,10 +44,6 @@
             android:name=".activity.ActiveTrainingActivity"
             android:exported="false"
             android:label="Active Training" />
-        <activity
-            android:name=".activity.AddExerciseActivity"
-            android:exported="false"
-            android:label="Add Exercise" />
     </application>
 
 </manifest>

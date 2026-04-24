@@ -34,7 +34,6 @@ public class ExerciseAdapter extends RecyclerView.Adapter<ExerciseAdapter.Exerci
         
         // Exercise Info
         holder.textViewName.setText(item.exercise.name);
-        holder.textViewMuscle.setText(item.exercise.primaryMuscle);
         
         // Target Info (Sets/Reps or Duration)
         StringBuilder target = new StringBuilder();

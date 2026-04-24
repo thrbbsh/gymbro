@@ -22,6 +22,12 @@ public interface WorkoutDao {
     @Query("SELECT * FROM workout_templates")
     List<WorkoutTemplate> getAllTemplates();
 
+    @Query("SELECT * FROM workout_templates WHERE name = :name LIMIT 1")
+    WorkoutTemplate getTemplateByName(String name);
+
+    @Query("SELECT COUNT(*) FROM template_exercises WHERE templateId = :templateId")
+    int getExerciseCountForTemplate(int templateId);
+
     @Transaction
     @Query("SELECT * FROM template_exercises WHERE templateId = :templateId")
     List<TemplateExerciseWithDetails> getExercisesForTemplateWithDetails(int templateId);

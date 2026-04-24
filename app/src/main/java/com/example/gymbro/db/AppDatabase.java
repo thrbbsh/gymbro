@@ -1,6 +1,7 @@
 package com.example.gymbro.db;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.room.Database;
@@ -17,7 +18,6 @@ import com.example.gymbro.db.entity.TemplateExercise;
 import com.example.gymbro.db.entity.WorkoutSession;
 import com.example.gymbro.db.entity.WorkoutTemplate;
 
-import java.util.Calendar;
 import java.util.concurrent.Executors;
 
 @Database(entities = {
@@ -26,7 +26,7 @@ import java.util.concurrent.Executors;
         TemplateExercise.class,
         WorkoutSession.class,
         SessionExercise.class
-}, version = 13, exportSchema = false)
+}, version = 14, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract ExerciseDao exerciseDao();
     public abstract WorkoutDao workoutDao();
@@ -46,7 +46,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                 public void onCreate(@NonNull SupportSQLiteDatabase db) {
                                     super.onCreate(db);
                                     Executors.newSingleThreadExecutor().execute(() -> {
-                                        prepopulateDatabase(INSTANCE);
+                                        prepopulateTemplates(INSTANCE);
                                     });
                                 }
 
@@ -54,7 +54,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                 public void onDestructiveMigration(@NonNull SupportSQLiteDatabase db) {
                                     super.onDestructiveMigration(db);
                                     Executors.newSingleThreadExecutor().execute(() -> {
-                                        prepopulateDatabase(INSTANCE);
+                                        prepopulateTemplates(INSTANCE);
                                     });
                                 }
                             })
@@ -65,73 +65,51 @@ public abstract class AppDatabase extends RoomDatabase {
         return INSTANCE;
     }
 
-    private static void prepopulateDatabase(AppDatabase db) {
+    public static void prepopulateTemplates(AppDatabase db) {
         if (db == null) return;
-        
-        ExerciseDao exerciseDao = db.exerciseDao();
         WorkoutDao workoutDao = db.workoutDao();
-        HistoryDao historyDao = db.historyDao();
+        ExerciseDao exerciseDao = db.exerciseDao();
 
-        // exerciseDao: 10 basic exercises, 6 muscle groups
-        long exBenchPress = exerciseDao.insert(new Exercise("Bench Press", "Chest"));
-        long exPushUps = exerciseDao.insert(new Exercise("Push-ups", "Chest"));
-        long exSquats = exerciseDao.insert(new Exercise("Squats", "Legs"));
-        long exLunges = exerciseDao.insert(new Exercise("Lunges", "Legs"));
-        long exDeadlift = exerciseDao.insert(new Exercise("Deadlift", "Back"));
-        long exPullUps = exerciseDao.insert(new Exercise("Pull-ups", "Back"));
-        long exOverheadPress = exerciseDao.insert(new Exercise("Overhead Press", "Shoulders"));
-        long exPlank = exerciseDao.insert(new Exercise("Plank", "Core"));
-        long exCrunches = exerciseDao.insert(new Exercise("Crunches", "Core"));
-        long exBicepCurls = exerciseDao.insert(new Exercise("Bicep Curls", "Arms"));
+        // 1. Get or Create templates
+        int fullBodyId = getOrCreateTemplate(workoutDao, "Full Body Basics");
+        int upperBodyId = getOrCreateTemplate(workoutDao, "Upper Body Focus");
+        int lowerBodyId = getOrCreateTemplate(workoutDao, "Lower Body & Core");
+
+        // 2. Link exercises if the template is empty
+        if (workoutDao.getExerciseCountForTemplate(fullBodyId) == 0) {
+            addExerciseToTemplateByName(exerciseDao, workoutDao, fullBodyId, "push up", 3, 12);
+            addExerciseToTemplateByName(exerciseDao, workoutDao, fullBodyId, "squat", 3, 15);
+        }
         
-        // workoutDao: 3 Basic Workout Templates
-        long tplFullBody = workoutDao.insertTemplate(new WorkoutTemplate("Full Body Basics"));
-        workoutDao.insertTemplateExercise(new TemplateExercise((int)tplFullBody, (int)exSquats, 3, 10, 0, 90));
-        workoutDao.insertTemplateExercise(new TemplateExercise((int)tplFullBody, (int)exBenchPress, 3, 10, 0, 90));
-        workoutDao.insertTemplateExercise(new TemplateExercise((int)tplFullBody, (int)exDeadlift, 3, 5, 0, 120));
-        workoutDao.insertTemplateExercise(new TemplateExercise((int)tplFullBody, (int)exPlank, 3, 0, 60, 60));
-
-        long tplUpperBody = workoutDao.insertTemplate(new WorkoutTemplate("Upper Body Focus"));
-        workoutDao.insertTemplateExercise(new TemplateExercise((int)tplUpperBody, (int)exPullUps, 3, 8, 0, 90));
-        workoutDao.insertTemplateExercise(new TemplateExercise((int)tplUpperBody, (int)exOverheadPress, 3, 10, 0, 90));
-        workoutDao.insertTemplateExercise(new TemplateExercise((int)tplUpperBody, (int)exPushUps, 3, 15, 0, 60));
-        workoutDao.insertTemplateExercise(new TemplateExercise((int)tplUpperBody, (int)exBicepCurls, 3, 12, 0, 60));
-
-        long tplLowerCore = workoutDao.insertTemplate(new WorkoutTemplate("Lower Body & Core"));
-        workoutDao.insertTemplateExercise(new TemplateExercise((int)tplLowerCore, (int)exSquats, 3, 12, 0, 90));
-        workoutDao.insertTemplateExercise(new TemplateExercise((int)tplLowerCore, (int)exLunges, 3, 10, 0, 60));
-        workoutDao.insertTemplateExercise(new TemplateExercise((int)tplLowerCore, (int)exPlank, 3, 0, 60, 60));
-        workoutDao.insertTemplateExercise(new TemplateExercise((int)tplLowerCore, (int)exCrunches, 3, 20, 0, 45));
-
-        // 3. historyDao: 4 workout sessions for Feb 2026
-        Calendar cal = Calendar.getInstance();
+        if (workoutDao.getExerciseCountForTemplate(upperBodyId) == 0) {
+            addExerciseToTemplateByName(exerciseDao, workoutDao, upperBodyId, "bench press", 4, 8);
+            addExerciseToTemplateByName(exerciseDao, workoutDao, upperBodyId, "pull up", 3, 10);
+        }
         
-        // 16.02.2026 09:00
-        cal.set(2026, Calendar.FEBRUARY, 16, 9, 0, 0);
-        long s1 = historyDao.insertSession(new WorkoutSession((int)tplLowerCore, cal.getTimeInMillis()));
-        if (s1 != -1) {
-            historyDao.insertSessionExercise(new SessionExercise((int)s1, (int)exSquats, 3, 12, 0, 90));
+        if (workoutDao.getExerciseCountForTemplate(lowerBodyId) == 0) {
+            addExerciseToTemplateByName(exerciseDao, workoutDao, lowerBodyId, "deadlift", 3, 8);
+            addExerciseToTemplateByName(exerciseDao, workoutDao, lowerBodyId, "leg press", 3, 12);
         }
+        
+        Log.d("AppDatabase", "Prepopulation logic finished.");
+    }
 
-        // 16.02.2026 19:00
-        cal.set(2026, Calendar.FEBRUARY, 16, 19, 0, 0);
-        long s2 = historyDao.insertSession(new WorkoutSession((int)tplFullBody, cal.getTimeInMillis()));
-        if (s2 != -1) {
-            historyDao.insertSessionExercise(new SessionExercise((int)s2, (int)exBenchPress, 3, 10, 0, 90));
+    private static int getOrCreateTemplate(WorkoutDao dao, String name) {
+        WorkoutTemplate template = dao.getTemplateByName(name);
+        if (template != null) {
+            return template.id;
         }
+        return (int) dao.insertTemplate(new WorkoutTemplate(name));
+    }
 
-        // 18.02.2026 19:00
-        cal.set(2026, Calendar.FEBRUARY, 18, 19, 0, 0);
-        long s3 = historyDao.insertSession(new WorkoutSession((int)tplUpperBody, cal.getTimeInMillis()));
-        if (s3 != -1) {
-            historyDao.insertSessionExercise(new SessionExercise((int)s3, (int)exPullUps, 3, 8, 0, 90));
-        }
-
-        // 20.02.2026 19:00
-        cal.set(2026, Calendar.FEBRUARY, 20, 19, 0, 0);
-        long s4 = historyDao.insertSession(new WorkoutSession((int)tplLowerCore, cal.getTimeInMillis()));
-        if (s4 != -1) {
-            historyDao.insertSessionExercise(new SessionExercise((int)s4, (int)exPlank, 3, 0, 60, 60));
+    private static void addExerciseToTemplateByName(ExerciseDao exDao, WorkoutDao workDao, int tId, String name, int sets, int reps) {
+        // Search using LIKE with the provided name
+        Exercise ex = exDao.findByName("%" + name + "%");
+        if (ex != null) {
+            workDao.insertTemplateExercise(new TemplateExercise(tId, ex.id, sets, reps, 0, 60));
+            Log.d("AppDatabase", "Linked '" + ex.name + "' to template ID: " + tId);
+        } else {
+            Log.w("AppDatabase", "Prepopulate: No exercise matching '" + name + "' found in database.");
         }
     }
 }
