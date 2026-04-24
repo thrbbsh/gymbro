@@ -14,6 +14,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,10 +38,13 @@ class ExerciseController {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @GetMapping("/api/exercises")
-    public ResponseEntity<?> getExercises() {
+    public ResponseEntity<?> getExercises(HttpServletRequest request) {
+        String clientIp = request.getRemoteAddr();
+        System.out.println(">>> Incoming request to /api/exercises from IP: " + clientIp);
+        
         List<Object> allExercises = loadLocalExercises();
         
-        System.out.println("Starting sync. Current local cache size: " + allExercises.size());
+        System.out.println("Current local cache size: " + allExercises.size());
 
         try {
             RestTemplate restTemplate = new RestTemplate();
@@ -50,6 +54,12 @@ class ExerciseController {
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
             boolean hasMore = true;
+            // Only try to fetch if we have very little data, to avoid hitting RapidAPI limits during debugging
+            if (allExercises.size() > 50) {
+                hasMore = false;
+                System.out.println("Cache sufficient. Skipping RapidAPI fetch.");
+            }
+
             while (hasMore) {
                 int offset = allExercises.size();
                 System.out.println("Fetching from RapidAPI: limit=10, offset=" + offset);
@@ -70,13 +80,12 @@ class ExerciseController {
                         System.out.println("No more data to fetch.");
                     } else {
                         allExercises.addAll(newBatch);
-                        saveLocalExercises(allExercises); // Сохраняем сразу после получения порции
+                        saveLocalExercises(allExercises);
                         
-                        if (newBatch.size() < 10) {
+                        if (newBatch.size() < 10 || allExercises.size() > 100) {
                             hasMore = false;
                         }
                         
-                        // Небольшая задержка, чтобы не спамить API слишком быстро
                         Thread.sleep(200); 
                     }
                 } catch (HttpClientErrorException.TooManyRequests e) {
@@ -85,11 +94,12 @@ class ExerciseController {
                 }
             }
 
+            System.out.println("<<< Sending " + allExercises.size() + " exercises to " + clientIp);
             return ResponseEntity.ok(allExercises);
 
         } catch (Exception e) {
             System.err.println("Unexpected error: " + e.getMessage());
-            return ResponseEntity.ok(allExercises); // В любой непонятной ситуации отдаем то, что уже есть
+            return ResponseEntity.ok(allExercises);
         }
     }
 
@@ -114,7 +124,8 @@ class ExerciseController {
     }
 
     @GetMapping("/api/community/posts")
-    public String getCommunityPosts() {
+    public String getCommunityPosts(HttpServletRequest request) {
+        System.out.println(">>> Incoming request to /api/community/posts from IP: " + request.getRemoteAddr());
         return "[{\"id\": 1, \"user\": \"GymRat\", \"content\": \"Just hit a new PR!\", \"likes\": 12}]";
     }
 }
