@@ -11,6 +11,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -26,6 +27,7 @@ import com.example.gymbro.adapter.SearchExerciseAdapter;
 import com.example.gymbro.db.AppDatabase;
 import com.example.gymbro.db.entity.Exercise;
 import com.example.gymbro.db.entity.TemplateExercise;
+import com.example.gymbro.db.entity.WorkoutTemplate;
 import com.example.gymbro.db.model.TemplateExerciseWithDetails;
 
 import java.util.ArrayList;
@@ -36,8 +38,10 @@ public class EditTemplateActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private EditExerciseAdapter adapter;
+    private EditText editTextTemplateName;
     private AppDatabase db;
     private int templateId;
+    private WorkoutTemplate currentTemplate;
     private List<TemplateExerciseWithDetails> exercises = new ArrayList<>();
 
     @Override
@@ -53,6 +57,7 @@ public class EditTemplateActivity extends AppCompatActivity {
         });
 
         recyclerView = findViewById(R.id.recyclerViewEditExercises);
+        editTextTemplateName = findViewById(R.id.editTextTemplateName);
         Button buttonAddExercise = findViewById(R.id.buttonAddExercise);
         
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -61,10 +66,52 @@ public class EditTemplateActivity extends AppCompatActivity {
         templateId = getIntent().getIntExtra("TEMPLATE_ID", -1);
 
         if (templateId != -1) {
+            loadTemplateData();
             loadExercises();
         }
 
+        setupNameChangeListener();
         buttonAddExercise.setOnClickListener(v -> showAddExerciseDialog());
+    }
+
+    private void loadTemplateData() {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            currentTemplate = db.workoutDao().getTemplateById(templateId);
+            if (currentTemplate != null) {
+                runOnUiThread(() -> {
+                    editTextTemplateName.setText(currentTemplate.name);
+                });
+            }
+        });
+    }
+
+    private void setupNameChangeListener() {
+        editTextTemplateName.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String newName = s.toString().trim();
+                if (newName.isEmpty()) {
+                    editTextTemplateName.setError("Name cannot be empty");
+                    return;
+                }
+                updateTemplateName(newName);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+    }
+
+    private void updateTemplateName(String newName) {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            if (currentTemplate != null) {
+                currentTemplate.name = newName;
+                db.workoutDao().updateTemplate(currentTemplate);
+            }
+        });
     }
 
     private void loadExercises() {
@@ -80,7 +127,7 @@ public class EditTemplateActivity extends AppCompatActivity {
     private void deleteExercise(TemplateExerciseWithDetails item) {
         Executors.newSingleThreadExecutor().execute(() -> {
             db.workoutDao().deleteTemplateExercise(item.templateExercise);
-            loadExercises(); // Refresh the list
+            loadExercises();
         });
     }
 

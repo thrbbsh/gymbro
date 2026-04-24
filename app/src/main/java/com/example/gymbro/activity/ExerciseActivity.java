@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.gymbro.R;
 import com.example.gymbro.adapter.ExerciseAdapter;
 import com.example.gymbro.db.AppDatabase;
+import com.example.gymbro.db.entity.WorkoutTemplate;
 import com.example.gymbro.db.model.TemplateExerciseWithDetails;
 
 import java.util.List;
@@ -31,7 +32,6 @@ public class ExerciseActivity extends AppCompatActivity {
     private AppDatabase db;
     private ExerciseAdapter adapter;
     private int templateId;
-    private String templateName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,7 +39,6 @@ public class ExerciseActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_exercise);
 
-        // Handle system bars insets for Edge-to-Edge display
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -52,20 +51,17 @@ public class ExerciseActivity extends AppCompatActivity {
         buttonStartWorkout = findViewById(R.id.buttonStartWorkout);
         
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
         db = AppDatabase.getDatabase(this);
 
         templateId = getIntent().getIntExtra("TEMPLATE_ID", -1);
-        templateName = getIntent().getStringExtra("TEMPLATE_NAME");
-
-        if (templateName != null) {
-            textViewTitle.setText(templateName);
+        String initialName = getIntent().getStringExtra("TEMPLATE_NAME");
+        if (initialName != null) {
+            textViewTitle.setText(initialName);
         }
 
         buttonEditTemplate.setOnClickListener(v -> {
             Intent intent = new Intent(ExerciseActivity.this, EditTemplateActivity.class);
             intent.putExtra("TEMPLATE_ID", templateId);
-            intent.putExtra("TEMPLATE_NAME", templateName);
             startActivity(intent);
         });
 
@@ -79,18 +75,24 @@ public class ExerciseActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Reload exercises every time the activity comes back to the foreground
         if (templateId != -1) {
+            refreshTemplateInfo();
             loadExercises(templateId);
         }
     }
 
-    private void loadExercises(int templateId) {
-        // Load data in background thread
+    private void refreshTemplateInfo() {
         Executors.newSingleThreadExecutor().execute(() -> {
-            // Fetch exercises with their details (names, muscle groups) using a Relation/Join
+            WorkoutTemplate template = db.workoutDao().getTemplateById(templateId);
+            if (template != null) {
+                runOnUiThread(() -> textViewTitle.setText(template.name));
+            }
+        });
+    }
+
+    private void loadExercises(int templateId) {
+        Executors.newSingleThreadExecutor().execute(() -> {
             List<TemplateExerciseWithDetails> exercises = db.workoutDao().getExercisesForTemplateWithDetails(templateId);
-            
             runOnUiThread(() -> {
                 adapter = new ExerciseAdapter(exercises);
                 recyclerView.setAdapter(adapter);

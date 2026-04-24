@@ -79,6 +79,13 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btnRetrySync).setOnClickListener(v -> syncExercisesWithApi());
 
         syncExercisesWithApi();
+        // Мы убираем loadTemplates() из onCreate, так как он вызовется в onResume
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Обновляем список шаблонов при каждом возврате на экран
         loadTemplates();
     }
 
@@ -144,24 +151,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadTemplates() {
-        textLoading.setVisibility(View.VISIBLE);
-        recyclerView.setVisibility(View.GONE);
+        // Мы не показываем "Loading", если список уже есть, чтобы не было мерцания
+        if (adapter == null) {
+            textLoading.setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.GONE);
+        }
 
         Executors.newSingleThreadExecutor().execute(() -> {
-            List<WorkoutTemplate> templates;
-            do {
-                templates = db.workoutDao().getAllTemplates();
-                if (templates.isEmpty()) {
-                    try { Thread.sleep(500); } catch (InterruptedException e) { break; }
-                }
-            } while (templates.isEmpty());
-
-            List<WorkoutTemplate> finalTemplates = templates;
+            List<WorkoutTemplate> templates = db.workoutDao().getAllTemplates();
+            
             runOnUiThread(() -> {
                 textLoading.setVisibility(View.GONE);
                 recyclerView.setVisibility(View.VISIBLE);
                 
-                adapter = new WorkoutAdapter(finalTemplates, template -> {
+                adapter = new WorkoutAdapter(templates, template -> {
                     Intent intent = new Intent(MainActivity.this, ExerciseActivity.class);
                     intent.putExtra("TEMPLATE_ID", template.id);
                     intent.putExtra("TEMPLATE_NAME", template.name);

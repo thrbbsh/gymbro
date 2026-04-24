@@ -5,6 +5,7 @@ import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
 import androidx.room.Transaction;
+import androidx.room.Update;
 
 import com.example.gymbro.db.entity.TemplateExercise;
 import com.example.gymbro.db.entity.WorkoutTemplate;
@@ -17,6 +18,9 @@ public interface WorkoutDao {
     @Insert
     long insertTemplate(WorkoutTemplate template);
 
+    @Update
+    void updateTemplate(WorkoutTemplate template);
+
     @Insert
     void insertTemplateExercise(TemplateExercise templateExercise);
 
@@ -25,6 +29,9 @@ public interface WorkoutDao {
 
     @Query("SELECT * FROM workout_templates")
     List<WorkoutTemplate> getAllTemplates();
+
+    @Query("SELECT * FROM workout_templates WHERE id = :id LIMIT 1")
+    WorkoutTemplate getTemplateById(int id);
 
     @Query("SELECT * FROM workout_templates WHERE name = :name LIMIT 1")
     WorkoutTemplate getTemplateByName(String name);
