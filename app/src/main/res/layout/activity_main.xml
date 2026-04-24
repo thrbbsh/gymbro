@@ -5,6 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#F5F5F5"
     tools:context=".activity.MainActivity">
 
     <TextView
@@ -12,9 +13,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
-        android:text="Select Workout Template"
-        android:textSize="24sp"
+        android:text="Workout Templates"
+        android:textSize="28sp"
         android:textStyle="bold"
+        android:textColor="#212121"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -24,9 +26,10 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"
+        android:clipToPadding="false"
+        android:paddingBottom="80dp"
         android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@+id/layoutButtons"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView" />
@@ -38,43 +41,96 @@
         android:text="Loading Workout Templates..."
         android:textSize="16sp"
         android:textColor="#757575"
-        app:layout_constraintBottom_toTopOf="@+id/layoutButtons"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView" />
-
-    <LinearLayout
-        android:id="@+id/layoutButtons"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="32dp"
-        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewSubtitle" />
 
-        <Button
-            android:id="@+id/buttonCommunity"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:text="Community" />
+    <!-- Плюсик справа выше панели -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddTemplate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintBottom_toTopOf="@+id/bottomNavCard"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:srcCompat="@android:drawable/ic_input_add"
+        app:backgroundTint="#6200EE"
+        app:tint="@android:color/white"
+        app:elevation="8dp"
+        android:contentDescription="Add Template" />
 
-        <Button
-            android:id="@+id/buttonStats"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Statistics" />
-    </LinearLayout>
+    <!-- Полноэкранная нижняя панель -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/bottomNavCard"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        app:cardCornerRadius="0dp"
+        app:cardElevation="16dp"
+        app:layout_constraintBottom_toBottomOf="parent">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonCommunity"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="Community"
+                android:textColor="#6200EE"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                app:cornerRadius="0dp"
+                app:icon="@android:drawable/ic_menu_share"
+                app:iconTint="#6200EE"
+                app:iconGravity="textStart"
+                app:iconPadding="4dp" />
+
+            <!-- Разделительная черта на всю высоту -->
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="#BDBDBD" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonStats"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="Statistics"
+                android:textColor="#6200EE"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                app:cornerRadius="0dp"
+                app:icon="@android:drawable/ic_menu_sort_by_size"
+                app:iconTint="#6200EE"
+                app:iconGravity="textStart"
+                app:iconPadding="4dp" />
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Overlay синхронизации -->
     <FrameLayout
         android:id="@+id/syncOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="?android:attr/windowBackground"
+        android:background="#FFFFFF"
         android:clickable="true"
         android:focusable="true"
-        android:visibility="gone">
+        android:visibility="gone"
+        android:elevation="30dp">
 
         <LinearLayout
             android:id="@+id/syncLoadingLayout"
@@ -86,14 +142,17 @@
 
             <ProgressBar
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:indeterminateTint="#6200EE" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="16dp"
                 android:text="Syncing Exercises..."
-                android:textSize="16sp" />
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#6200EE" />
         </LinearLayout>
 
         <LinearLayout
@@ -112,7 +171,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:text="Failed to sync exercises"
-                android:textColor="?android:attr/textColorPrimary"
+                android:textColor="#D32F2F"
                 android:textSize="18sp" />
 
             <Button
@@ -120,7 +179,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Retry" />
+                android:text="Retry"
+                android:backgroundTint="#6200EE" />
         </LinearLayout>
     </FrameLayout>
 

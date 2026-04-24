@@ -3,6 +3,7 @@ package com.example.gymbro.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -16,13 +17,14 @@ import java.util.List;
 public class WorkoutAdapter extends RecyclerView.Adapter<WorkoutAdapter.WorkoutViewHolder> {
 
     private List<WorkoutTemplate> templates;
-    private OnTemplateClickListener listener;
+    private OnTemplateActionListener listener;
 
-    public interface OnTemplateClickListener {
+    public interface OnTemplateActionListener {
         void onTemplateClick(WorkoutTemplate template);
+        void onTemplateDelete(WorkoutTemplate template);
     }
 
-    public WorkoutAdapter(List<WorkoutTemplate> templates, OnTemplateClickListener listener) {
+    public WorkoutAdapter(List<WorkoutTemplate> templates, OnTemplateActionListener listener) {
         this.templates = templates;
         this.listener = listener;
     }
@@ -39,6 +41,7 @@ public class WorkoutAdapter extends RecyclerView.Adapter<WorkoutAdapter.WorkoutV
         WorkoutTemplate template = templates.get(position);
         holder.textViewName.setText(template.name);
         holder.itemView.setOnClickListener(v -> listener.onTemplateClick(template));
+        holder.buttonDelete.setOnClickListener(v -> listener.onTemplateDelete(template));
     }
 
     @Override
@@ -48,10 +51,12 @@ public class WorkoutAdapter extends RecyclerView.Adapter<WorkoutAdapter.WorkoutV
 
     static class WorkoutViewHolder extends RecyclerView.ViewHolder {
         TextView textViewName;
+        ImageButton buttonDelete;
 
         public WorkoutViewHolder(@NonNull View itemView) {
             super(itemView);
             textViewName = itemView.findViewById(R.id.textViewTemplateName);
+            buttonDelete = itemView.findViewById(R.id.buttonDeleteTemplate);
         }
     }
 }

@@ -2,13 +2,16 @@ package com.example.gymbro.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -22,6 +25,7 @@ import com.example.gymbro.db.AppDatabase;
 import com.example.gymbro.db.entity.Exercise;
 import com.example.gymbro.db.entity.WorkoutTemplate;
 import com.example.gymbro.network.RetrofitClient;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -61,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
         syncLoadingLayout = findViewById(R.id.syncLoadingLayout);
         syncErrorLayout = findViewById(R.id.syncErrorLayout);
         textSyncError = findViewById(R.id.textSyncError);
+        FloatingActionButton fabAddTemplate = findViewById(R.id.fabAddTemplate);
         
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
@@ -78,22 +83,58 @@ public class MainActivity extends AppCompatActivity {
 
         findViewById(R.id.btnRetrySync).setOnClickListener(v -> syncExercisesWithApi());
 
+        fabAddTemplate.setOnClickListener(v -> showAddTemplateDialog());
+
         syncExercisesWithApi();
-        // Мы убираем loadTemplates() из onCreate, так как он вызовется в onResume
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Обновляем список шаблонов при каждом возврате на экран
         loadTemplates();
+    }
+
+    private void showAddTemplateDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("New Workout Template");
+
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        input.setHint("Template Name");
+        int padding = (int) (16 * getResources().getDisplayMetrics().density);
+        builder.setView(input);
+        input.setPadding(padding, padding, padding, padding);
+
+        builder.setPositiveButton("Create", (dialog, which) -> {
+            String name = input.getText().toString().trim();
+            if (!name.isEmpty()) {
+                createNewTemplate(name);
+            } else {
+                Toast.makeText(this, "Name cannot be empty", Toast.LENGTH_SHORT).show();
+            }
+        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+
+        builder.show();
+    }
+
+    private void createNewTemplate(String name) {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            long id = db.workoutDao().insertTemplate(new WorkoutTemplate(name));
+            runOnUiThread(() -> {
+                loadTemplates();
+                // Optionally open the edit screen for the new template immediately
+                Intent intent = new Intent(MainActivity.this, ExerciseActivity.class);
+                intent.putExtra("TEMPLATE_ID", (int) id);
+                intent.putExtra("TEMPLATE_NAME", name);
+                startActivity(intent);
+            });
+        });
     }
 
     private void syncExercisesWithApi() {
         Executors.newSingleThreadExecutor().execute(() -> {
             int currentCount = db.exerciseDao().getExerciseCount();
-            Log.d(TAG, "Current exercise count in DB: " + currentCount);
-            
             if (currentCount > 20) {
                 runOnUiThread(() -> syncOverlay.setVisibility(View.GONE));
                 return;
@@ -105,23 +146,19 @@ public class MainActivity extends AppCompatActivity {
                 syncErrorLayout.setVisibility(View.GONE);
             });
 
-            Log.d(TAG, "Starting API request to sync exercises...");
             RetrofitClient.getApiService().getExercises().enqueue(new Callback<List<Exercise>>() {
                 @Override
                 public void onResponse(Call<List<Exercise>> call, Response<List<Exercise>> response) {
                     if (response.isSuccessful() && response.body() != null) {
-                        Log.d(TAG, "Successfully received " + response.body().size() + " exercises from server");
                         saveExercisesToDb(response.body());
                     } else {
-                        Log.e(TAG, "Sync failed with code: " + response.code());
-                        showSyncError("Sync failed (Code: " + response.code() + "). Make sure server is running.");
+                        showSyncError("Sync failed (Code: " + response.code() + ")");
                     }
                 }
 
                 @Override
                 public void onFailure(Call<List<Exercise>> call, Throwable t) {
-                    Log.e(TAG, "Network error during sync: " + t.getMessage(), t);
-                    showSyncError("Connection Error: " + t.getMessage() + "\n\n1. Check if server is RUNNING\n2. Check IP address in RetrofitClient\n3. Check Firewall settings");
+                    showSyncError("Connection Error: " + t.getMessage());
                 }
             });
         });
@@ -138,20 +175,15 @@ public class MainActivity extends AppCompatActivity {
     private void saveExercisesToDb(List<Exercise> exercises) {
         Executors.newSingleThreadExecutor().execute(() -> {
             db.exerciseDao().insertAll(exercises);
-            
-            // Trigger linking exercises to templates now that we have the data
             AppDatabase.prepopulateTemplates(db);
-            
             runOnUiThread(() -> {
                 syncOverlay.setVisibility(View.GONE);
-                Toast.makeText(MainActivity.this, "Exercises synced and templates updated!", Toast.LENGTH_SHORT).show();
                 loadTemplates();
             });
         });
     }
 
     private void loadTemplates() {
-        // Мы не показываем "Loading", если список уже есть, чтобы не было мерцания
         if (adapter == null) {
             textLoading.setVisibility(View.VISIBLE);
             recyclerView.setVisibility(View.GONE);
@@ -159,19 +191,40 @@ public class MainActivity extends AppCompatActivity {
 
         Executors.newSingleThreadExecutor().execute(() -> {
             List<WorkoutTemplate> templates = db.workoutDao().getAllTemplates();
-            
             runOnUiThread(() -> {
                 textLoading.setVisibility(View.GONE);
                 recyclerView.setVisibility(View.VISIBLE);
                 
-                adapter = new WorkoutAdapter(templates, template -> {
-                    Intent intent = new Intent(MainActivity.this, ExerciseActivity.class);
-                    intent.putExtra("TEMPLATE_ID", template.id);
-                    intent.putExtra("TEMPLATE_NAME", template.name);
-                    startActivity(intent);
+                adapter = new WorkoutAdapter(templates, new WorkoutAdapter.OnTemplateActionListener() {
+                    @Override
+                    public void onTemplateClick(WorkoutTemplate template) {
+                        Intent intent = new Intent(MainActivity.this, ExerciseActivity.class);
+                        intent.putExtra("TEMPLATE_ID", template.id);
+                        intent.putExtra("TEMPLATE_NAME", template.name);
+                        startActivity(intent);
+                    }
+
+                    @Override
+                    public void onTemplateDelete(WorkoutTemplate template) {
+                        deleteTemplate(template);
+                    }
                 });
                 recyclerView.setAdapter(adapter);
             });
         });
+    }
+
+    private void deleteTemplate(WorkoutTemplate template) {
+        new AlertDialog.Builder(this)
+                .setTitle("Delete Template")
+                .setMessage("Are you sure you want to delete '" + template.name + "'?")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    Executors.newSingleThreadExecutor().execute(() -> {
+                        db.workoutDao().deleteTemplate(template);
+                        runOnUiThread(this::loadTemplates);
+                    });
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 }

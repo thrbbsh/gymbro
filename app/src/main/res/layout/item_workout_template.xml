@@ -8,13 +8,33 @@
     app:cardCornerRadius="8dp"
     app:cardElevation="4dp">
 
-    <TextView
-        android:id="@+id/textViewTemplateName"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="24dp"
-        android:text="Workout Name"
-        android:textSize="18sp"
-        android:textStyle="bold" />
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/textViewTemplateName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:layout_toStartOf="@+id/buttonDeleteTemplate"
+            android:text="Workout Name"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/buttonDeleteTemplate"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Delete Template"
+            android:src="@drawable/ic_close"
+            app:tint="#D32F2F" />
+
+    </RelativeLayout>
 
 </androidx.cardview.widget.CardView>
