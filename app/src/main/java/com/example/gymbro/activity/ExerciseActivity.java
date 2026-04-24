@@ -74,7 +74,12 @@ public class ExerciseActivity extends AppCompatActivity {
             intent.putExtra("TEMPLATE_ID", templateId);
             startActivity(intent);
         });
+    }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Reload exercises every time the activity comes back to the foreground
         if (templateId != -1) {
             loadExercises(templateId);
         }

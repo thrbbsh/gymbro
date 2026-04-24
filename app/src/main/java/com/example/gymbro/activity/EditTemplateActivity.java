@@ -1,8 +1,16 @@
 package com.example.gymbro.activity;
 
+import android.app.Dialog;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.Toast;
+import android.widget.EditText;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,7 +22,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.gymbro.R;
 import com.example.gymbro.adapter.EditExerciseAdapter;
+import com.example.gymbro.adapter.SearchExerciseAdapter;
 import com.example.gymbro.db.AppDatabase;
+import com.example.gymbro.db.entity.Exercise;
+import com.example.gymbro.db.entity.TemplateExercise;
 import com.example.gymbro.db.model.TemplateExerciseWithDetails;
 
 import java.util.ArrayList;
@@ -53,9 +64,7 @@ public class EditTemplateActivity extends AppCompatActivity {
             loadExercises();
         }
 
-        buttonAddExercise.setOnClickListener(v -> {
-            Toast.makeText(this, "Add Exercise functionality coming soon", Toast.LENGTH_SHORT).show();
-        });
+        buttonAddExercise.setOnClickListener(v -> showAddExerciseDialog());
     }
 
     private void loadExercises() {
@@ -65,6 +74,62 @@ public class EditTemplateActivity extends AppCompatActivity {
                 adapter = new EditExerciseAdapter(exercises);
                 recyclerView.setAdapter(adapter);
             });
+        });
+    }
+
+    private void showAddExerciseDialog() {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_add_exercise, null);
+        dialog.setContentView(view);
+
+        // Make dialog wide enough
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
+
+        EditText searchInput = view.findViewById(R.id.editTextSearchExercise);
+        RecyclerView allExercisesRecycler = view.findViewById(R.id.recyclerViewAllExercises);
+        Button btnClose = view.findViewById(R.id.buttonCloseDialog);
+
+        allExercisesRecycler.setLayoutManager(new LinearLayoutManager(this));
+        allExercisesRecycler.setHasFixedSize(true);
+
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+            List<Exercise> allExercises = db.exerciseDao().getAllExercises();
+            runOnUiThread(() -> {
+                SearchExerciseAdapter searchAdapter = new SearchExerciseAdapter(allExercises, exercise -> {
+                    addExerciseToTemplate(exercise);
+                    dialog.dismiss();
+                });
+                allExercisesRecycler.setAdapter(searchAdapter);
+
+                searchInput.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                        searchAdapter.filter(s.toString());
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable s) {}
+                });
+            });
+        });
+
+        dialog.show();
+    }
+
+    private void addExerciseToTemplate(Exercise exercise) {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            TemplateExercise newEx = new TemplateExercise(templateId, exercise.id, 3, 10, 0, 60);
+            db.workoutDao().insertTemplateExercise(newEx);
+            loadExercises();
         });
     }
 }
