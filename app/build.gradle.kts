@@ -37,6 +37,11 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     
+    // Retrofit & Networking
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.gson)
+
     // Material Calendar View
     implementation(libs.prolific.calendarview)
 
