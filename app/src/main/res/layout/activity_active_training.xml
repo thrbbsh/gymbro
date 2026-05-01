@@ -29,24 +29,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textExerciseName" />
 
-    <androidx.cardview.widget.CardView
-        android:id="@+id/videoPlaceholder"
+    <ImageView
+        android:id="@+id/imageExerciseGif"
         android:layout_width="0dp"
-        android:layout_height="200dp"
+        android:layout_height="240dp"
         android:layout_marginTop="32dp"
-        app:cardBackgroundColor="#E0E0E0"
-        app:cardCornerRadius="16dp"
+        android:scaleType="fitCenter"
+        android:background="#F5F5F5"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textExerciseDetails">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="Video Instruction Placeholder"
-            android:textColor="#757575" />
-    </androidx.cardview.widget.CardView>
+        app:layout_constraintTop_toBottomOf="@+id/textExerciseDetails" />
 
     <TextView
         android:id="@+id/textTimerLabel"
@@ -58,7 +50,7 @@
         android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/videoPlaceholder" />
+        app:layout_constraintTop_toBottomOf="@+id/imageExerciseGif" />
 
     <TextView
         android:id="@+id/textTimerValue"

@@ -12,7 +12,7 @@ public class TemplateExerciseWithDetails {
 
     @Relation(
             parentColumn = "exerciseId",
-            entityColumn = "id"
+            entityColumn = "apiId"
     )
     public Exercise exercise;
 }

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
 }
@@ -5,6 +7,10 @@ plugins {
 android {
     namespace = "com.example.gymbro"
     compileSdk = 36
+
+    buildFeatures {
+        buildConfig = true
+    }
 
     defaultConfig {
         applicationId = "com.example.gymbro"
@@ -14,6 +20,15 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val localProps = Properties()
+        val localFile = rootProject.file("local.properties")
+        if (localFile.exists()) {
+            localFile.inputStream().use { localProps.load(it) }
+        }
+        val proxyHostLan = localProps.getProperty("gymbro.proxy.host", "10.40.3.188")
+        buildConfigField("String", "PROXY_HOST_LAN", "\"$proxyHostLan\"")
+        buildConfigField("int", "PROXY_PORT", "3000")
     }
 
     buildTypes {
@@ -41,6 +56,10 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.gson)
+
+    // Coil for Image Loading & GIF Support
+    implementation(libs.coil)
+    implementation(libs.coil.gif)
 
     // Material Calendar View
     implementation(libs.prolific.calendarview)

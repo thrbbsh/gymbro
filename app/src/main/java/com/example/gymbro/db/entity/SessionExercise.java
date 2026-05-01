@@ -1,5 +1,6 @@
 package com.example.gymbro.db.entity;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
 import androidx.room.PrimaryKey;
@@ -11,7 +12,7 @@ import androidx.room.PrimaryKey;
                         childColumns = "sessionId",
                         onDelete = ForeignKey.CASCADE),
                 @ForeignKey(entity = Exercise.class,
-                        parentColumns = "id",
+                        parentColumns = "apiId",
                         childColumns = "exerciseId",
                         onDelete = ForeignKey.CASCADE)
         })
@@ -20,14 +21,16 @@ public class SessionExercise {
     public int id;
     
     public int sessionId;
-    public int exerciseId;
+    
+    @NonNull
+    public String exerciseId;
     
     public int actualSets;
     public int actualReps;
     public int actualDuration;
     public int restSeconds;
 
-    public SessionExercise(int sessionId, int exerciseId, int actualSets, int actualReps, int actualDuration, int restSeconds) {
+    public SessionExercise(int sessionId, @NonNull String exerciseId, int actualSets, int actualReps, int actualDuration, int restSeconds) {
         this.sessionId = sessionId;
         this.exerciseId = exerciseId;
         this.actualSets = actualSets;

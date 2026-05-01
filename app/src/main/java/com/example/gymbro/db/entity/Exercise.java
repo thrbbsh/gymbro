@@ -1,13 +1,17 @@
 package com.example.gymbro.db.entity;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import com.google.gson.annotations.SerializedName;
 
 @Entity(tableName = "exercises")
 public class Exercise {
-    @PrimaryKey(autoGenerate = true)
-    public int id;
+    
+    @PrimaryKey
+    @NonNull
+    @SerializedName("id")
+    public String apiId;
 
     @SerializedName("name")
     public String name;
@@ -21,16 +25,17 @@ public class Exercise {
     @SerializedName("equipment")
     public String equipment;
 
-    @SerializedName("gifUrl")
     public String gifUrl;
 
-    public Exercise() {}
+    public Exercise() {
+        this.apiId = "";
+    }
 
-    public Exercise(String name, String target, String bodyPart, String equipment, String gifUrl) {
+    public Exercise(@NonNull String apiId, String name, String target, String bodyPart, String equipment) {
+        this.apiId = apiId;
         this.name = name;
         this.target = target;
         this.bodyPart = bodyPart;
         this.equipment = equipment;
-        this.gifUrl = gifUrl;
     }
 }

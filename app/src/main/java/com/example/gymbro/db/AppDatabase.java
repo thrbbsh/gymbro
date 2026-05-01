@@ -26,7 +26,7 @@ import java.util.concurrent.Executors;
         TemplateExercise.class,
         WorkoutSession.class,
         SessionExercise.class
-}, version = 14, exportSchema = false)
+}, version = 18, exportSchema = false) // Updated version to 18
 public abstract class AppDatabase extends RoomDatabase {
     public abstract ExerciseDao exerciseDao();
     public abstract WorkoutDao workoutDao();
@@ -70,12 +70,10 @@ public abstract class AppDatabase extends RoomDatabase {
         WorkoutDao workoutDao = db.workoutDao();
         ExerciseDao exerciseDao = db.exerciseDao();
 
-        // 1. Get or Create templates
         int fullBodyId = getOrCreateTemplate(workoutDao, "Full Body Basics");
         int upperBodyId = getOrCreateTemplate(workoutDao, "Upper Body Focus");
         int lowerBodyId = getOrCreateTemplate(workoutDao, "Lower Body & Core");
 
-        // 2. Link exercises if the template is empty
         if (workoutDao.getExerciseCountForTemplate(fullBodyId) == 0) {
             addExerciseToTemplateByName(exerciseDao, workoutDao, fullBodyId, "push up", 3, 12);
             addExerciseToTemplateByName(exerciseDao, workoutDao, fullBodyId, "squat", 3, 15);
@@ -90,26 +88,18 @@ public abstract class AppDatabase extends RoomDatabase {
             addExerciseToTemplateByName(exerciseDao, workoutDao, lowerBodyId, "deadlift", 3, 8);
             addExerciseToTemplateByName(exerciseDao, workoutDao, lowerBodyId, "leg press", 3, 12);
         }
-        
-        Log.d("AppDatabase", "Prepopulation logic finished.");
     }
 
     private static int getOrCreateTemplate(WorkoutDao dao, String name) {
         WorkoutTemplate template = dao.getTemplateByName(name);
-        if (template != null) {
-            return template.id;
-        }
+        if (template != null) return template.id;
         return (int) dao.insertTemplate(new WorkoutTemplate(name));
     }
 
     private static void addExerciseToTemplateByName(ExerciseDao exDao, WorkoutDao workDao, int tId, String name, int sets, int reps) {
-        // Search using LIKE with the provided name
         Exercise ex = exDao.findByName("%" + name + "%");
         if (ex != null) {
-            workDao.insertTemplateExercise(new TemplateExercise(tId, ex.id, sets, reps, 0, 60));
-            Log.d("AppDatabase", "Linked '" + ex.name + "' to template ID: " + tId);
-        } else {
-            Log.w("AppDatabase", "Prepopulate: No exercise matching '" + name + "' found in database.");
+            workDao.insertTemplateExercise(new TemplateExercise(tId, ex.apiId, sets, reps, 0, 60));
         }
     }
 }

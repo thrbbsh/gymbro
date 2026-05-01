@@ -1,9 +1,12 @@
 package com.example.gymbro.activity;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
@@ -22,15 +25,27 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 
+import coil.ComponentRegistry;
+import coil.ImageLoader;
+import coil.decode.GifDecoder;
+import coil.decode.ImageDecoderDecoder;
+import coil.request.ImageRequest;
+
 public class ActiveTrainingActivity extends AppCompatActivity {
 
+    private static final String TAG = "ActiveTraining";
     private TextView textExerciseName, textExerciseDetails, textTimerLabel, textTimerValue;
+    private ImageView imageExerciseGif;
     private Button buttonNext;
     private AppDatabase db;
     private List<TemplateExerciseWithDetails> exercises = new ArrayList<>();
     private int currentExerciseIndex = 0;
     private int currentSet = 1;
     private boolean isResting = false;
+    private ImageLoader gifLoader;
+
+    // Используем тот же адрес, что и в RetrofitClient
+    private static final String PROXY_GIF_URL = "http://172.21.207.164:3000/api/image?exerciseId=";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,12 +59,9 @@ public class ActiveTrainingActivity extends AppCompatActivity {
             return insets;
         });
 
-        textExerciseName = findViewById(R.id.textExerciseName);
-        textExerciseDetails = findViewById(R.id.textExerciseDetails);
-        textTimerLabel = findViewById(R.id.textTimerLabel);
-        textTimerValue = findViewById(R.id.textTimerValue);
-        buttonNext = findViewById(R.id.buttonNext);
-
+        initViews();
+        initGifLoader();
+        
         db = AppDatabase.getDatabase(this);
         int templateId = getIntent().getIntExtra("TEMPLATE_ID", -1);
 
@@ -59,13 +71,34 @@ public class ActiveTrainingActivity extends AppCompatActivity {
 
         buttonNext.setOnClickListener(v -> handleNext());
 
-        // Handle back press with confirmation
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 showExitConfirmation();
             }
         });
+    }
+
+    private void initViews() {
+        textExerciseName = findViewById(R.id.textExerciseName);
+        textExerciseDetails = findViewById(R.id.textExerciseDetails);
+        textTimerLabel = findViewById(R.id.textTimerLabel);
+        textTimerValue = findViewById(R.id.textTimerValue);
+        imageExerciseGif = findViewById(R.id.imageExerciseGif);
+        buttonNext = findViewById(R.id.buttonNext);
+    }
+
+    private void initGifLoader() {
+        ComponentRegistry.Builder componentsBuilder = new ComponentRegistry.Builder();
+        if (Build.VERSION.SDK_INT >= 28) {
+            componentsBuilder.add(new ImageDecoderDecoder.Factory());
+        } else {
+            componentsBuilder.add(new GifDecoder.Factory());
+        }
+
+        gifLoader = new ImageLoader.Builder(this)
+                .components(componentsBuilder.build())
+                .build();
     }
 
     private void loadExercises(int templateId) {
@@ -75,13 +108,36 @@ public class ActiveTrainingActivity extends AppCompatActivity {
         });
     }
 
+    private void loadGif(String apiId) {
+        if (apiId == null || apiId.isEmpty()) {
+            Log.w(TAG, "Cannot load GIF: apiId is empty");
+            return;
+        }
+
+        String url = PROXY_GIF_URL + apiId;
+        Log.d(TAG, "Loading GIF via proxy: " + url);
+
+        ImageRequest request = new ImageRequest.Builder(this)
+                .data(url)
+                .target(imageExerciseGif)
+                .crossfade(true)
+                .listener(new ImageRequest.Listener() {
+                    @Override
+                    public void onError(ImageRequest request, coil.request.ErrorResult result) {
+                        Log.e(TAG, "Error loading GIF from proxy: " + result.getThrowable().getMessage());
+                    }
+                })
+                .build();
+
+        gifLoader.enqueue(request);
+    }
+
     private void handleNext() {
         if (exercises.isEmpty()) return;
 
         TemplateExerciseWithDetails current = exercises.get(currentExerciseIndex);
 
         if (isResting) {
-            // Finished resting, go to next set or next exercise
             isResting = false;
             if (currentSet < current.templateExercise.targetSets) {
                 currentSet++;
@@ -96,8 +152,6 @@ public class ActiveTrainingActivity extends AppCompatActivity {
                 updateUI();
             }
         } else {
-            // Finished a set
-            // Check if it was the last set of the last exercise
             if (currentSet == current.templateExercise.targetSets && currentExerciseIndex == exercises.size() - 1) {
                 finishWorkout();
             } else {
@@ -114,12 +168,11 @@ public class ActiveTrainingActivity extends AppCompatActivity {
         
         if (isResting) {
             textExerciseName.setText("Rest Period");
+            imageExerciseGif.setVisibility(View.GONE);
             
             if (currentSet < current.templateExercise.targetSets) {
-                // Next set of the SAME exercise
                 textExerciseDetails.setText("Next: " + current.exercise.name + " (Set " + (currentSet + 1) + ")");
             } else if (currentExerciseIndex + 1 < exercises.size()) {
-                // Next is the FIRST set of the NEXT exercise
                 TemplateExerciseWithDetails nextEx = exercises.get(currentExerciseIndex + 1);
                 textExerciseDetails.setText("Next: " + nextEx.exercise.name + " (Set 1)");
             }
@@ -129,6 +182,10 @@ public class ActiveTrainingActivity extends AppCompatActivity {
             buttonNext.setText("Skip Rest");
         } else {
             textExerciseName.setText(current.exercise.name);
+            imageExerciseGif.setVisibility(View.VISIBLE);
+            
+            loadGif(current.exercise.apiId);
+
             String details = "Set " + currentSet + "/" + current.templateExercise.targetSets;
             if (current.templateExercise.targetReps > 0) {
                 details += " • " + current.templateExercise.targetReps + " reps";
@@ -145,7 +202,7 @@ public class ActiveTrainingActivity extends AppCompatActivity {
     private void showExitConfirmation() {
         new AlertDialog.Builder(this)
                 .setTitle("Quit Training?")
-                .setMessage("Are you sure you want to interrupt your workout? Progress will not be saved.")
+                .setMessage("Are you sure you want to interrupt your workout?")
                 .setPositiveButton("Yes, Quit", (dialog, which) -> finish())
                 .setNegativeButton("No, Continue", null)
                 .show();
@@ -157,15 +214,13 @@ public class ActiveTrainingActivity extends AppCompatActivity {
                 .setMessage("Congratulations! You have successfully finished your training session.")
                 .setCancelable(false)
                 .setPositiveButton("Go to Statistics", (dialog, which) -> {
-                    // First, clear everything up to MainActivity to remove ExerciseActivity from stack
                     Intent mainIntent = new Intent(ActiveTrainingActivity.this, MainActivity.class);
                     mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                     startActivity(mainIntent);
                     
-                    // Then start StatisticsActivity on top of MainActivity
                     Intent statsIntent = new Intent(ActiveTrainingActivity.this, StatisticsActivity.class);
+                    statsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(statsIntent);
-
                     finish();
                 })
                 .show();

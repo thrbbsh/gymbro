@@ -195,7 +195,7 @@ public class EditTemplateActivity extends AppCompatActivity {
 
     private void addExerciseToTemplate(Exercise exercise) {
         Executors.newSingleThreadExecutor().execute(() -> {
-            TemplateExercise newEx = new TemplateExercise(templateId, exercise.id, 3, 10, 0, 60);
+            TemplateExercise newEx = new TemplateExercise(templateId, exercise.apiId, 3, 10, 0, 60);
             db.workoutDao().insertTemplateExercise(newEx);
             loadExercises();
         });

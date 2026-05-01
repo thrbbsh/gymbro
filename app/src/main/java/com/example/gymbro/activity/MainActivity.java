@@ -37,6 +37,7 @@ import retrofit2.Response;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
+
     private RecyclerView recyclerView;
     private TextView textLoading;
     private View syncOverlay;
@@ -81,11 +82,11 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        findViewById(R.id.btnRetrySync).setOnClickListener(v -> syncExercisesWithApi());
+        findViewById(R.id.btnRetrySync).setOnClickListener(v -> syncExercisesWithProxy());
 
         fabAddTemplate.setOnClickListener(v -> showAddTemplateDialog());
 
-        syncExercisesWithApi();
+        syncExercisesWithProxy();
     }
 
     @Override
@@ -123,7 +124,6 @@ public class MainActivity extends AppCompatActivity {
             long id = db.workoutDao().insertTemplate(new WorkoutTemplate(name));
             runOnUiThread(() -> {
                 loadTemplates();
-                // Optionally open the edit screen for the new template immediately
                 Intent intent = new Intent(MainActivity.this, ExerciseActivity.class);
                 intent.putExtra("TEMPLATE_ID", (int) id);
                 intent.putExtra("TEMPLATE_NAME", name);
@@ -132,10 +132,11 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void syncExercisesWithApi() {
+    private void syncExercisesWithProxy() {
         Executors.newSingleThreadExecutor().execute(() -> {
             int currentCount = db.exerciseDao().getExerciseCount();
-            if (currentCount > 20) {
+            // If we already have a significant amount of exercises, skip sync
+            if (currentCount > 100) {
                 runOnUiThread(() -> syncOverlay.setVisibility(View.GONE));
                 return;
             }
@@ -146,19 +147,26 @@ public class MainActivity extends AppCompatActivity {
                 syncErrorLayout.setVisibility(View.GONE);
             });
 
-            RetrofitClient.getApiService().getExercises().enqueue(new Callback<List<Exercise>>() {
+            // Call proxy server which handles RapidAPI and returns the full list
+            RetrofitClient.getApiService().getExercises()
+                .enqueue(new Callback<List<Exercise>>() {
                 @Override
                 public void onResponse(Call<List<Exercise>> call, Response<List<Exercise>> response) {
                     if (response.isSuccessful() && response.body() != null) {
+                        Log.d(TAG, "Received " + response.body().size() + " exercises from proxy");
                         saveExercisesToDb(response.body());
                     } else {
-                        showSyncError("Sync failed (Code: " + response.code() + ")");
+                        showSyncError("Sync failed (Code: " + response.code() + "). Make sure the proxy server is running.");
+                        Log.e(TAG, "Sync failed: " + response.message());
                     }
                 }
 
                 @Override
                 public void onFailure(Call<List<Exercise>> call, Throwable t) {
-                    showSyncError("Connection Error: " + t.getMessage());
+                    showSyncError("Connection Error: " + t.getMessage()
+                            + "\nStart the Spring server (port from application.properties). "
+                            + "Emulator: host 10.0.2.2; phone: PC Wi‑Fi IP (see gymbro.proxy.host in local.properties).");
+                    Log.e(TAG, "Connection Error", t);
                 }
             });
         });
