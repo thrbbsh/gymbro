@@ -60,6 +60,9 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
+        // Initialize MeasureType exceptions from assets
+        ExerciseMeasureHelper.loadExceptions(this);
+
         db = AppDatabase.getDatabase(this);
         recyclerView = findViewById(R.id.recyclerViewTemplates);
         textLoading = findViewById(R.id.textLoadingTemplates);
