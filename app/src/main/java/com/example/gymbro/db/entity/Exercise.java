@@ -26,6 +26,10 @@ public class Exercise {
     @TypeConverters(Converters.class)
     public List<String> secondaryMuscles;
 
+    @SerializedName("instructions")
+    @TypeConverters(Converters.class)
+    public List<String> instructions;
+
     @SerializedName("bodyPart")
     public String bodyPart;
 
@@ -33,6 +37,8 @@ public class Exercise {
     public String equipment;
 
     public String gifUrl;
+
+    public MeasureType measureType;
 
     public Exercise() {
         this.apiId = "";

@@ -27,15 +27,19 @@ public class SessionExercise {
     
     public int actualSets;
     public int actualReps;
+    public double actualWeight;
     public int actualDuration;
+    public double actualDistance;
     public int restSeconds;
 
-    public SessionExercise(int sessionId, @NonNull String exerciseId, int actualSets, int actualReps, int actualDuration, int restSeconds) {
+    public SessionExercise(int sessionId, @NonNull String exerciseId, int actualSets, int actualReps, double actualWeight, int actualDuration, double actualDistance, int restSeconds) {
         this.sessionId = sessionId;
         this.exerciseId = exerciseId;
         this.actualSets = actualSets;
         this.actualReps = actualReps;
+        this.actualWeight = actualWeight;
         this.actualDuration = actualDuration;
+        this.actualDistance = actualDistance;
         this.restSeconds = restSeconds;
     }
 }

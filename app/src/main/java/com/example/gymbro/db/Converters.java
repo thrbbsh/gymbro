@@ -1,6 +1,7 @@
 package com.example.gymbro.db;
 
 import androidx.room.TypeConverter;
+import com.example.gymbro.db.entity.MeasureType;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
@@ -19,5 +20,15 @@ public class Converters {
     public static String fromList(List<String> list) {
         Gson gson = new Gson();
         return gson.toJson(list);
+    }
+
+    @TypeConverter
+    public static String fromMeasureType(MeasureType type) {
+        return type == null ? null : type.name();
+    }
+
+    @TypeConverter
+    public static MeasureType toMeasureType(String value) {
+        return value == null ? null : MeasureType.valueOf(value);
     }
 }

@@ -43,6 +43,7 @@
             app:layout_constraintTop_toBottomOf="@+id/textViewExerciseName">
 
             <LinearLayout
+                android:id="@+id/layoutSets"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -64,6 +65,30 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/layoutWeight"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1.2"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Weight (kg)"
+                    android:textSize="10sp" />
+
+                <EditText
+                    android:id="@+id/editTextWeight"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:text="0"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutReps"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
@@ -82,6 +107,29 @@
                     android:layout_height="wrap_content"
                     android:inputType="number"
                     android:text="10"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutDistance"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1.2"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Dist (km)"
+                    android:textSize="10sp" />
+
+                <EditText
+                    android:id="@+id/editTextDistance"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:text="0"
                     android:textSize="14sp" />
             </LinearLayout>
 

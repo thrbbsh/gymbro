@@ -25,6 +25,7 @@ import com.example.gymbro.db.AppDatabase;
 import com.example.gymbro.db.entity.Exercise;
 import com.example.gymbro.db.entity.WorkoutTemplate;
 import com.example.gymbro.network.RetrofitClient;
+import com.example.gymbro.utils.ExerciseMeasureHelper;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.List;
@@ -182,6 +183,12 @@ public class MainActivity extends AppCompatActivity {
 
     private void saveExercisesToDb(List<Exercise> exercises) {
         Executors.newSingleThreadExecutor().execute(() -> {
+            // Enrich exercises with MeasureType before saving
+            for (Exercise ex : exercises) {
+                ex.measureType = ExerciseMeasureHelper.guessMeasureType(
+                        ex.apiId, ex.name, ex.equipment, ex.instructions
+                );
+            }
             db.exerciseDao().insertAll(exercises);
             AppDatabase.prepopulateTemplates(db);
             runOnUiThread(() -> {

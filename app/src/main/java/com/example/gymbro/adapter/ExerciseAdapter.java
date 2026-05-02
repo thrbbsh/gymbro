@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.gymbro.R;
+import com.example.gymbro.db.entity.MeasureType;
 import com.example.gymbro.db.model.TemplateExerciseWithDetails;
 
 import java.util.List;
@@ -43,14 +44,32 @@ public class ExerciseAdapter extends RecyclerView.Adapter<ExerciseAdapter.Exerci
         }
         holder.textViewMuscle.setText(muscles.toString());
         
+        // Format target info based on MeasureType
+        MeasureType type = item.exercise.measureType;
+        if (type == null) type = MeasureType.WEIGHT_REPS;
+        
         StringBuilder target = new StringBuilder();
-        if (item.templateExercise.targetSets > 0) {
-            target.append(item.templateExercise.targetSets).append(" sets");
-            if (item.templateExercise.targetReps > 0) {
-                target.append(" x ").append(item.templateExercise.targetReps).append(" reps");
-            }
-        } else if (item.templateExercise.targetDuration > 0) {
-            target.append("Duration: ").append(item.templateExercise.targetDuration).append("s");
+        int sets = item.templateExercise.targetSets;
+        
+        switch (type) {
+            case WEIGHT_REPS:
+                target.append(sets).append(" sets x ").append(item.templateExercise.targetReps).append(" reps");
+                if (item.templateExercise.targetWeight > 0) {
+                    target.append(" @ ").append(item.templateExercise.targetWeight).append(" kg");
+                }
+                break;
+            case BODYWEIGHT_REPS:
+                target.append(sets).append(" sets x ").append(item.templateExercise.targetReps).append(" reps (Bodyweight)");
+                break;
+            case DURATION:
+                target.append(sets).append(" sets x ").append(item.templateExercise.targetDuration).append("s (Hold)");
+                break;
+            case DISTANCE_TIME:
+                if (item.templateExercise.targetDistance > 0) {
+                    target.append(item.templateExercise.targetDistance).append(" km in ");
+                }
+                target.append(item.templateExercise.targetDuration).append("s");
+                break;
         }
         
         holder.textViewTarget.setText(target.toString());

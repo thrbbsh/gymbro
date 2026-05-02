@@ -21,6 +21,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.example.gymbro.BuildConfig;
 import com.example.gymbro.R;
 import com.example.gymbro.db.AppDatabase;
+import com.example.gymbro.db.entity.MeasureType;
 import com.example.gymbro.db.model.TemplateExerciseWithDetails;
 import com.example.gymbro.network.RetrofitClient;
 
@@ -198,13 +199,35 @@ public class ActiveTrainingActivity extends AppCompatActivity {
 
             loadGif(current.exercise.apiId);
 
-            String details = "Set " + currentSet + "/" + current.templateExercise.targetSets;
-            if (current.templateExercise.targetReps > 0) {
-                details += " • " + current.templateExercise.targetReps + " reps";
-            } else if (current.templateExercise.targetDuration > 0) {
-                details += " • " + current.templateExercise.targetDuration + "s";
+            // Format target info based on MeasureType
+            MeasureType type = current.exercise.measureType;
+            if (type == null) type = MeasureType.WEIGHT_REPS;
+            
+            StringBuilder detailsBuilder = new StringBuilder();
+            detailsBuilder.append("Set ").append(currentSet).append("/").append(current.templateExercise.targetSets);
+            
+            switch (type) {
+                case WEIGHT_REPS:
+                    if (current.templateExercise.targetWeight > 0) {
+                        detailsBuilder.append(" • ").append(current.templateExercise.targetWeight).append(" kg");
+                    }
+                    detailsBuilder.append(" • ").append(current.templateExercise.targetReps).append(" reps");
+                    break;
+                case BODYWEIGHT_REPS:
+                    detailsBuilder.append(" • ").append(current.templateExercise.targetReps).append(" reps");
+                    break;
+                case DURATION:
+                    detailsBuilder.append(" • ").append(current.templateExercise.targetDuration).append("s");
+                    break;
+                case DISTANCE_TIME:
+                    if (current.templateExercise.targetDistance > 0) {
+                        detailsBuilder.append(" • ").append(current.templateExercise.targetDistance).append(" km");
+                    }
+                    detailsBuilder.append(" • ").append(current.templateExercise.targetDuration).append("s");
+                    break;
             }
-            textExerciseDetails.setText(details);
+            
+            textExerciseDetails.setText(detailsBuilder.toString());
             textTimerLabel.setVisibility(View.INVISIBLE);
             textTimerValue.setText("00:00");
             buttonNext.setText("Next Set");

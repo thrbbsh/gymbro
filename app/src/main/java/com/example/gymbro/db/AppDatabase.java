@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
+import androidx.room.TypeConverters;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.example.gymbro.db.dao.ExerciseDao;
@@ -26,7 +27,8 @@ import java.util.concurrent.Executors;
         TemplateExercise.class,
         WorkoutSession.class,
         SessionExercise.class
-}, version = 19, exportSchema = false) // Updated version to 19
+}, version = 22, exportSchema = false) // Updated version to 22
+@TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
     public abstract ExerciseDao exerciseDao();
     public abstract WorkoutDao workoutDao();
@@ -99,7 +101,8 @@ public abstract class AppDatabase extends RoomDatabase {
     private static void addExerciseToTemplateByName(ExerciseDao exDao, WorkoutDao workDao, int tId, String name, int sets, int reps) {
         Exercise ex = exDao.findByName("%" + name + "%");
         if (ex != null) {
-            workDao.insertTemplateExercise(new TemplateExercise(tId, ex.apiId, sets, reps, 0, 60));
+            // Updated to match new constructor: templateId, exerciseId, sets, reps, weight, duration, distance, rest
+            workDao.insertTemplateExercise(new TemplateExercise(tId, ex.apiId, sets, reps, 0, 0, 0, 60));
         }
     }
 }

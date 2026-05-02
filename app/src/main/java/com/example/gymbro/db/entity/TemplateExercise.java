@@ -27,15 +27,19 @@ public class TemplateExercise {
     
     public int targetSets;
     public int targetReps;
+    public double targetWeight;
     public int targetDuration;
+    public double targetDistance;
     public int restSeconds;
 
-    public TemplateExercise(int templateId, @NonNull String exerciseId, int targetSets, int targetReps, int targetDuration, int restSeconds) {
+    public TemplateExercise(int templateId, @NonNull String exerciseId, int targetSets, int targetReps, double targetWeight, int targetDuration, double targetDistance, int restSeconds) {
         this.templateId = templateId;
         this.exerciseId = exerciseId;
         this.targetSets = targetSets;
         this.targetReps = targetReps;
+        this.targetWeight = targetWeight;
         this.targetDuration = targetDuration;
+        this.targetDistance = targetDistance;
         this.restSeconds = restSeconds;
     }
 }
