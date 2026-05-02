@@ -19,6 +19,19 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
+        android:id="@+id/textMuscleGroup"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Muscle Group"
+        android:textAlignment="center"
+        android:textSize="16sp"
+        android:textColor="#757575"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textExerciseName" />
+
+    <TextView
         android:id="@+id/textExerciseDetails"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -27,7 +40,7 @@
         android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textExerciseName" />
+        app:layout_constraintTop_toBottomOf="@+id/textMuscleGroup" />
 
     <ImageView
         android:id="@+id/imageExerciseGif"

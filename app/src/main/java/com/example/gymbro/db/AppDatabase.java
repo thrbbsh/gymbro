@@ -26,7 +26,7 @@ import java.util.concurrent.Executors;
         TemplateExercise.class,
         WorkoutSession.class,
         SessionExercise.class
-}, version = 18, exportSchema = false) // Updated version to 18
+}, version = 19, exportSchema = false) // Updated version to 19
 public abstract class AppDatabase extends RoomDatabase {
     public abstract ExerciseDao exerciseDao();
     public abstract WorkoutDao workoutDao();

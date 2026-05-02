@@ -46,7 +46,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textViewSubtitle" />
 
-    <!-- Плюсик справа выше панели -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddTemplate"
         android:layout_width="wrap_content"
@@ -61,7 +60,6 @@
         app:elevation="8dp"
         android:contentDescription="Add Template" />
 
-    <!-- Полноэкранная нижняя панель -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/bottomNavCard"
         android:layout_width="match_parent"
@@ -94,7 +92,6 @@
                 app:iconGravity="textStart"
                 app:iconPadding="4dp" />
 
-            <!-- Разделительная черта на всю высоту -->
             <View
                 android:layout_width="1dp"
                 android:layout_height="match_parent"
@@ -121,7 +118,6 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Overlay синхронизации -->
     <FrameLayout
         android:id="@+id/syncOverlay"
         android:layout_width="match_parent"

@@ -3,7 +3,10 @@ package com.example.gymbro.db.entity;
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
+import androidx.room.TypeConverters;
+import com.example.gymbro.db.Converters;
 import com.google.gson.annotations.SerializedName;
+import java.util.List;
 
 @Entity(tableName = "exercises")
 public class Exercise {
@@ -18,6 +21,10 @@ public class Exercise {
 
     @SerializedName("target")
     public String target;
+
+    @SerializedName("secondaryMuscles")
+    @TypeConverters(Converters.class)
+    public List<String> secondaryMuscles;
 
     @SerializedName("bodyPart")
     public String bodyPart;

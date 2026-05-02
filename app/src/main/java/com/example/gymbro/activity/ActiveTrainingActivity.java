@@ -3,6 +3,7 @@ package com.example.gymbro.activity;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -34,7 +35,7 @@ import coil.request.ImageRequest;
 public class ActiveTrainingActivity extends AppCompatActivity {
 
     private static final String TAG = "ActiveTraining";
-    private TextView textExerciseName, textExerciseDetails, textTimerLabel, textTimerValue;
+    private TextView textExerciseName, textMuscleGroup, textExerciseDetails, textTimerLabel, textTimerValue;
     private ImageView imageExerciseGif;
     private Button buttonNext;
     private AppDatabase db;
@@ -43,8 +44,6 @@ public class ActiveTrainingActivity extends AppCompatActivity {
     private int currentSet = 1;
     private boolean isResting = false;
     private ImageLoader gifLoader;
-
-    // Используем тот же адрес, что и в RetrofitClient
     private static final String PROXY_GIF_URL = "http://172.21.207.164:3000/api/image?exerciseId=";
 
     @Override
@@ -81,6 +80,7 @@ public class ActiveTrainingActivity extends AppCompatActivity {
 
     private void initViews() {
         textExerciseName = findViewById(R.id.textExerciseName);
+        textMuscleGroup = findViewById(R.id.textMuscleGroup);
         textExerciseDetails = findViewById(R.id.textExerciseDetails);
         textTimerLabel = findViewById(R.id.textTimerLabel);
         textTimerValue = findViewById(R.id.textTimerValue);
@@ -168,6 +168,7 @@ public class ActiveTrainingActivity extends AppCompatActivity {
         
         if (isResting) {
             textExerciseName.setText("Rest Period");
+            textMuscleGroup.setVisibility(View.GONE);
             imageExerciseGif.setVisibility(View.GONE);
             
             if (currentSet < current.templateExercise.targetSets) {
@@ -182,8 +183,16 @@ public class ActiveTrainingActivity extends AppCompatActivity {
             buttonNext.setText("Skip Rest");
         } else {
             textExerciseName.setText(current.exercise.name);
-            imageExerciseGif.setVisibility(View.VISIBLE);
+            textMuscleGroup.setVisibility(View.VISIBLE);
             
+            StringBuilder muscles = new StringBuilder(current.exercise.target);
+            if (current.exercise.secondaryMuscles != null && !current.exercise.secondaryMuscles.isEmpty()) {
+                muscles.append(" | ").append(TextUtils.join(", ", current.exercise.secondaryMuscles));
+            }
+            textMuscleGroup.setText(muscles.toString());
+            
+            imageExerciseGif.setVisibility(View.VISIBLE);
+
             loadGif(current.exercise.apiId);
 
             String details = "Set " + currentSet + "/" + current.templateExercise.targetSets;

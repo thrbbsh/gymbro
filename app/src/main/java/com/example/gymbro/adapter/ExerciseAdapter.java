@@ -1,5 +1,6 @@
 package com.example.gymbro.adapter;
 
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,10 +33,16 @@ public class ExerciseAdapter extends RecyclerView.Adapter<ExerciseAdapter.Exerci
     public void onBindViewHolder(@NonNull ExerciseViewHolder holder, int position) {
         TemplateExerciseWithDetails item = items.get(position);
         
-        // Exercise Info
         holder.textViewName.setText(item.exercise.name);
         
-        // Target Info (Sets/Reps or Duration)
+        // Format Primary and Secondary Muscles with |
+        StringBuilder muscles = new StringBuilder(item.exercise.target);
+        if (item.exercise.secondaryMuscles != null && !item.exercise.secondaryMuscles.isEmpty()) {
+            muscles.append(" | ");
+            muscles.append(TextUtils.join(", ", item.exercise.secondaryMuscles));
+        }
+        holder.textViewMuscle.setText(muscles.toString());
+        
         StringBuilder target = new StringBuilder();
         if (item.templateExercise.targetSets > 0) {
             target.append(item.templateExercise.targetSets).append(" sets");
