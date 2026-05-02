@@ -11,8 +11,10 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -71,6 +73,22 @@ public class EditTemplateActivity extends AppCompatActivity {
 
         setupNameChangeListener();
         buttonAddExercise.setOnClickListener(v -> showAddExerciseDialog());
+
+        // Back button validation
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (adapter != null && !adapter.isAllValid()) {
+                    Toast.makeText(EditTemplateActivity.this, "Please fix the errors before saving", Toast.LENGTH_SHORT).show();
+                } else if (editTextTemplateName.getText().toString().trim().isEmpty()) {
+                    editTextTemplateName.setError("Name is required");
+                    Toast.makeText(EditTemplateActivity.this, "Template name is required", Toast.LENGTH_SHORT).show();
+                } else {
+                    setEnabled(false);
+                    onBackPressed();
+                }
+            }
+        });
     }
 
     private void loadTemplateData() {
@@ -92,11 +110,9 @@ public class EditTemplateActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 String newName = s.toString().trim();
-                if (newName.isEmpty()) {
-                    editTextTemplateName.setError("Name cannot be empty");
-                    return;
+                if (!newName.isEmpty()) {
+                    updateTemplateName(newName);
                 }
-                updateTemplateName(newName);
             }
 
             @Override
@@ -195,8 +211,8 @@ public class EditTemplateActivity extends AppCompatActivity {
 
     private void addExerciseToTemplate(Exercise exercise) {
         Executors.newSingleThreadExecutor().execute(() -> {
-            // Updated constructor: templateId, exerciseId, targetSets, targetReps, targetWeight, targetDuration, targetDistance, restSeconds
-            TemplateExercise newEx = new TemplateExercise(templateId, exercise.apiId, 3, 10, 0.0, 0, 0.0, 60);
+            // Initializing with zeros to trigger validation errors in UI
+            TemplateExercise newEx = new TemplateExercise(templateId, exercise.apiId, 0, 0, 0.0, 0, 0.0, 60);
             db.workoutDao().insertTemplateExercise(newEx);
             loadExercises();
         });

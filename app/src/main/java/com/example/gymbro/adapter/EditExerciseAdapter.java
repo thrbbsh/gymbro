@@ -53,9 +53,8 @@ public class EditExerciseAdapter extends RecyclerView.Adapter<EditExerciseAdapte
         holder.editDuration.setText(String.valueOf(item.templateExercise.targetDuration));
         holder.editRest.setText(String.valueOf(item.templateExercise.restSeconds));
 
-        // Show/Hide fields based on MeasureType
-        MeasureType type = item.exercise.measureType;
-        if (type == null) type = MeasureType.WEIGHT_REPS;
+        // Visibility based on MeasureType
+        final MeasureType type = item.exercise.measureType != null ? item.exercise.measureType : MeasureType.WEIGHT_REPS;
 
         holder.layoutWeight.setVisibility(View.GONE);
         holder.layoutReps.setVisibility(View.GONE);
@@ -72,6 +71,7 @@ public class EditExerciseAdapter extends RecyclerView.Adapter<EditExerciseAdapte
                 break;
             case DURATION:
                 holder.layoutDuration.setVisibility(View.VISIBLE);
+                holder.layoutReps.setVisibility(View.VISIBLE); // Sometimes reps make sense with hold
                 break;
             case DISTANCE_TIME:
                 holder.layoutDistance.setVisibility(View.VISIBLE);
@@ -85,36 +85,71 @@ public class EditExerciseAdapter extends RecyclerView.Adapter<EditExerciseAdapte
             }
         });
 
+        // Watchers with professional validation rules
         holder.setsWatcher = new SimpleTextWatcher(s -> {
             int val = parseSafeInt(s);
-            item.templateExercise.targetSets = val;
-            actionListener.onUpdate(item);
+            if (val >= 1 && val <= 50) {
+                item.templateExercise.targetSets = val;
+                actionListener.onUpdate(item);
+            } else {
+                holder.editSets.setError("1-50");
+            }
         });
+
         holder.repsWatcher = new SimpleTextWatcher(s -> {
             int val = parseSafeInt(s);
-            item.templateExercise.targetReps = val;
-            actionListener.onUpdate(item);
+            // Reps can be 0 for Duration and Distance/Time
+            int minReps = (type == MeasureType.DURATION || type == MeasureType.DISTANCE_TIME) ? 0 : 1;
+            if (val >= minReps && val <= 999) {
+                item.templateExercise.targetReps = val;
+                actionListener.onUpdate(item);
+            } else {
+                holder.editReps.setError("Min " + minReps);
+            }
         });
+
         holder.weightWatcher = new SimpleTextWatcher(s -> {
             double val = parseSafeDouble(s);
-            item.templateExercise.targetWeight = val;
-            actionListener.onUpdate(item);
+            if (val >= 0.5 && val <= 999.9) {
+                item.templateExercise.targetWeight = val;
+                actionListener.onUpdate(item);
+            } else {
+                holder.editWeight.setError("Min 0.5");
+            }
         });
+
         holder.distanceWatcher = new SimpleTextWatcher(s -> {
             double val = parseSafeDouble(s);
-            item.templateExercise.targetDistance = val;
-            actionListener.onUpdate(item);
+            if (val >= 0.05 && val <= 999.9) {
+                item.templateExercise.targetDistance = val;
+                actionListener.onUpdate(item);
+            } else {
+                holder.editDistance.setError("Min 0.05");
+            }
         });
+
         holder.durationWatcher = new SimpleTextWatcher(s -> {
             int val = parseSafeInt(s);
-            item.templateExercise.targetDuration = val;
-            actionListener.onUpdate(item);
+            if (val >= 5 && val <= 14400) {
+                item.templateExercise.targetDuration = val;
+                actionListener.onUpdate(item);
+            } else {
+                holder.editDuration.setError("Min 5s");
+            }
         });
+
         holder.restWatcher = new SimpleTextWatcher(s -> {
             int val = parseSafeInt(s);
-            item.templateExercise.restSeconds = val;
-            actionListener.onUpdate(item);
+            if (val >= 0 && val <= 999) {
+                item.templateExercise.restSeconds = val;
+                actionListener.onUpdate(item);
+            } else {
+                holder.editRest.setError("0-999");
+            }
         });
+
+        // Initial validation to show errors for 0 values immediately
+        validateInitial(holder, item, type);
 
         holder.editSets.addTextChangedListener(holder.setsWatcher);
         holder.editReps.addTextChangedListener(holder.repsWatcher);
@@ -124,9 +159,48 @@ public class EditExerciseAdapter extends RecyclerView.Adapter<EditExerciseAdapte
         holder.editRest.addTextChangedListener(holder.restWatcher);
     }
 
+    private void validateInitial(EditViewHolder holder, TemplateExerciseWithDetails item, MeasureType type) {
+        if (item.templateExercise.targetSets < 1) holder.editSets.setError("1-50");
+        
+        int minReps = (type == MeasureType.DURATION || type == MeasureType.DISTANCE_TIME) ? 0 : 1;
+        if (item.templateExercise.targetReps < minReps) holder.editReps.setError("Min " + minReps);
+        
+        if (type == MeasureType.WEIGHT_REPS && item.templateExercise.targetWeight < 0.5) 
+            holder.editWeight.setError("Min 0.5");
+            
+        if (type == MeasureType.DISTANCE_TIME && item.templateExercise.targetDistance < 0.05) 
+            holder.editDistance.setError("Min 0.05");
+            
+        if ((type == MeasureType.DURATION || type == MeasureType.DISTANCE_TIME) && item.templateExercise.targetDuration < 5) 
+            holder.editDuration.setError("Min 5s");
+    }
+
+    /**
+     * Comprehensive validity check for the entire template.
+     */
+    public boolean isAllValid() {
+        if (items == null) return true;
+        for (TemplateExerciseWithDetails item : items) {
+            if (item.exercise == null) continue;
+            
+            MeasureType type = item.exercise.measureType != null ? item.exercise.measureType : MeasureType.WEIGHT_REPS;
+            
+            if (item.templateExercise.targetSets < 1 || item.templateExercise.targetSets > 50) return false;
+            
+            int minReps = (type == MeasureType.DURATION || type == MeasureType.DISTANCE_TIME) ? 0 : 1;
+            if (item.templateExercise.targetReps < minReps || item.templateExercise.targetReps > 999) return false;
+            
+            if (type == MeasureType.WEIGHT_REPS && (item.templateExercise.targetWeight < 0.5 || item.templateExercise.targetWeight > 999.9)) return false;
+            if (type == MeasureType.DISTANCE_TIME && (item.templateExercise.targetDistance < 0.05 || item.templateExercise.targetDistance > 999.9)) return false;
+            if ((type == MeasureType.DURATION || type == MeasureType.DISTANCE_TIME) && (item.templateExercise.targetDuration < 5 || item.templateExercise.targetDuration > 14400)) return false;
+            if (item.templateExercise.restSeconds < 0 || item.templateExercise.restSeconds > 999) return false;
+        }
+        return true;
+    }
+
     private int parseSafeInt(String s) {
         try {
-            return s.isEmpty() ? 0 : Integer.parseInt(s);
+            return s == null || s.isEmpty() ? 0 : Integer.parseInt(s);
         } catch (NumberFormatException e) {
             return 0;
         }
@@ -134,7 +208,7 @@ public class EditExerciseAdapter extends RecyclerView.Adapter<EditExerciseAdapte
 
     private double parseSafeDouble(String s) {
         try {
-            return s.isEmpty() ? 0 : Double.parseDouble(s);
+            return s == null || s.isEmpty() ? 0 : Double.parseDouble(s.replace(',', '.'));
         } catch (NumberFormatException e) {
             return 0;
         }
