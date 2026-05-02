@@ -18,9 +18,11 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.gymbro.BuildConfig;
 import com.example.gymbro.R;
 import com.example.gymbro.db.AppDatabase;
 import com.example.gymbro.db.model.TemplateExerciseWithDetails;
+import com.example.gymbro.network.RetrofitClient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +46,7 @@ public class ActiveTrainingActivity extends AppCompatActivity {
     private int currentSet = 1;
     private boolean isResting = false;
     private ImageLoader gifLoader;
-    private static final String PROXY_GIF_URL = "http://172.21.207.164:3000/api/image?exerciseId=";
+    private static final String PROXY_GIF_URL = "http://" + BuildConfig.PROXY_HOST_LAN + ":" + BuildConfig.PROXY_PORT + "/api/image?exerciseId=";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,6 +99,7 @@ public class ActiveTrainingActivity extends AppCompatActivity {
         }
 
         gifLoader = new ImageLoader.Builder(this)
+                .okHttpClient(RetrofitClient.getOkHttpClient(this)) // Use cached client
                 .components(componentsBuilder.build())
                 .build();
     }

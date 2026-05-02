@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
             });
 
             // Call proxy server which handles RapidAPI and returns the full list
-            RetrofitClient.getApiService().getExercises()
+            RetrofitClient.getApiService(this).getExercises()
                 .enqueue(new Callback<List<Exercise>>() {
                 @Override
                 public void onResponse(Call<List<Exercise>> call, Response<List<Exercise>> response) {

@@ -26,7 +26,7 @@ android {
         if (localFile.exists()) {
             localFile.inputStream().use { localProps.load(it) }
         }
-        val proxyHostLan = localProps.getProperty("gymbro.proxy.host", "10.40.3.188")
+        val proxyHostLan = localProps.getProperty("gymbro.proxy.host", "172.21.207.164")
         buildConfigField("String", "PROXY_HOST_LAN", "\"$proxyHostLan\"")
         buildConfigField("int", "PROXY_PORT", "3000")
     }
