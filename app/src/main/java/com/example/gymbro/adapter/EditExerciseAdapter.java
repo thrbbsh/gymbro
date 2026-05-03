@@ -71,7 +71,7 @@ public class EditExerciseAdapter extends RecyclerView.Adapter<EditExerciseAdapte
                 break;
             case DURATION:
                 holder.layoutDuration.setVisibility(View.VISIBLE);
-                holder.layoutReps.setVisibility(View.VISIBLE); // Sometimes reps make sense with hold
+                // Reps are hidden for Duration (Plank)
                 break;
             case DISTANCE_TIME:
                 holder.layoutDistance.setVisibility(View.VISIBLE);
@@ -85,7 +85,7 @@ public class EditExerciseAdapter extends RecyclerView.Adapter<EditExerciseAdapte
             }
         });
 
-        // Watchers with professional validation rules
+        // Validation logic
         holder.setsWatcher = new SimpleTextWatcher(s -> {
             int val = parseSafeInt(s);
             if (val >= 1 && val <= 50) {
@@ -98,7 +98,6 @@ public class EditExerciseAdapter extends RecyclerView.Adapter<EditExerciseAdapte
 
         holder.repsWatcher = new SimpleTextWatcher(s -> {
             int val = parseSafeInt(s);
-            // Reps can be 0 for Duration and Distance/Time
             int minReps = (type == MeasureType.DURATION || type == MeasureType.DISTANCE_TIME) ? 0 : 1;
             if (val >= minReps && val <= 999) {
                 item.templateExercise.targetReps = val;
@@ -148,7 +147,7 @@ public class EditExerciseAdapter extends RecyclerView.Adapter<EditExerciseAdapte
             }
         });
 
-        // Initial validation to show errors for 0 values immediately
+        // Manually trigger initial validation to show errors if values are 0
         validateInitial(holder, item, type);
 
         holder.editSets.addTextChangedListener(holder.setsWatcher);
@@ -175,16 +174,10 @@ public class EditExerciseAdapter extends RecyclerView.Adapter<EditExerciseAdapte
             holder.editDuration.setError("Min 5s");
     }
 
-    /**
-     * Comprehensive validity check for the entire template.
-     */
     public boolean isAllValid() {
         if (items == null) return true;
         for (TemplateExerciseWithDetails item : items) {
-            if (item.exercise == null) continue;
-            
             MeasureType type = item.exercise.measureType != null ? item.exercise.measureType : MeasureType.WEIGHT_REPS;
-            
             if (item.templateExercise.targetSets < 1 || item.templateExercise.targetSets > 50) return false;
             
             int minReps = (type == MeasureType.DURATION || type == MeasureType.DISTANCE_TIME) ? 0 : 1;

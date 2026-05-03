@@ -45,46 +45,143 @@
     <ImageView
         android:id="@+id/imageExerciseGif"
         android:layout_width="0dp"
-        android:layout_height="240dp"
-        android:layout_marginTop="32dp"
+        android:layout_height="200dp"
+        android:layout_marginTop="16dp"
         android:scaleType="fitCenter"
         android:background="#F5F5F5"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textExerciseDetails" />
 
-    <TextView
-        android:id="@+id/textTimerLabel"
+    <!-- Universal Timer/Stopwatch Container -->
+    <LinearLayout
+        android:id="@+id/layoutTimerContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="48dp"
-        android:text="Rest Time"
-        android:textSize="20sp"
+        android:orientation="vertical"
+        android:gravity="center"
         android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@+id/layoutInputsContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/imageExerciseGif" />
+        app:layout_constraintTop_toBottomOf="@+id/imageExerciseGif">
 
-    <TextView
-        android:id="@+id/textTimerValue"
-        android:layout_width="wrap_content"
+        <Button
+            android:id="@+id/buttonRestPlus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+10s"
+            android:backgroundTint="#4CAF50"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/textTimeDisplay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0s"
+            android:textSize="64sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/buttonRestMinus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-10s"
+            android:backgroundTint="#F44336"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- Dynamic Actual Result Inputs -->
+    <HorizontalScrollView
+        android:id="@+id/layoutInputsContainer"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="00:00"
-        android:textSize="48sp"
-        android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textTimerLabel" />
-
-    <Button
-        android:id="@+id/buttonNext"
-        style="@style/GreenButtonStyle"
-        android:layout_width="0dp"
-        android:layout_height="64dp"
         android:layout_marginBottom="16dp"
-        android:text="Next"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:fillViewport="true"
+        app:layout_constraintBottom_toTopOf="@+id/layoutActionArea">
+
+        <LinearLayout
+            android:id="@+id/layoutInputs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <include
+                android:id="@+id/inputWeight"
+                layout="@layout/layout_number_input_with_arrows" />
+
+            <include
+                android:id="@+id/inputReps"
+                layout="@layout/layout_number_input_with_arrows" />
+
+            <include
+                android:id="@+id/inputDistance"
+                layout="@layout/layout_number_input_with_arrows" />
+
+            <include
+                android:id="@+id/inputDuration"
+                layout="@layout/layout_number_input_with_arrows" />
+
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- Main Action Panel -->
+    <LinearLayout
+        android:id="@+id/layoutActionArea"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <Button
+            android:id="@+id/buttonSkipSet"
+            android:layout_width="80dp"
+            android:layout_height="64dp"
+            android:text="Skip"
+            android:textSize="12sp"
+            android:padding="0dp"
+            app:backgroundTint="@null"
+            android:textColor="#757575"
+            android:layout_marginEnd="8dp" />
+
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="64dp"
+            android:layout_weight="1">
+
+            <Button
+                android:id="@+id/buttonNext"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="Next Set"
+                app:backgroundTint="@null" />
+
+            <Button
+                android:id="@+id/buttonStopTimer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="Stop"
+                android:visibility="gone"
+                app:backgroundTint="@null" />
+        </FrameLayout>
+
+        <Button
+            android:id="@+id/buttonAddSet"
+            android:layout_width="80dp"
+            android:layout_height="64dp"
+            android:text="+ Set"
+            android:textSize="12sp"
+            android:padding="0dp"
+            android:backgroundTint="#E3F2FD"
+            android:textColor="#1976D2"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

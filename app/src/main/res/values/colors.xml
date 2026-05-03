@@ -3,6 +3,11 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="green_button">#4CAF50</color>
+    <color name="green_button_light">#81C784</color>
+    <color name="red_button">#E53935</color>
+    <color name="red_button_light">#EF9A9A</color>
+    <color name="grey_button">#9E9E9E</color>
+    <color name="grey_button_light">#E0E0E0</color>
     <color name="button_text_light">#FFFFFF</color>
     <color name="button_text_dark">#000000</color>
 </resources>

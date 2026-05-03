@@ -27,7 +27,7 @@ import java.util.concurrent.Executors;
         TemplateExercise.class,
         WorkoutSession.class,
         SessionExercise.class
-}, version = 22, exportSchema = false) // Updated version to 22
+}, version = 23, exportSchema = false)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
     public abstract ExerciseDao exerciseDao();
@@ -101,8 +101,8 @@ public abstract class AppDatabase extends RoomDatabase {
     private static void addExerciseToTemplateByName(ExerciseDao exDao, WorkoutDao workDao, int tId, String name, int sets, int reps) {
         Exercise ex = exDao.findByName("%" + name + "%");
         if (ex != null) {
-            // Updated to match new constructor: templateId, exerciseId, sets, reps, weight, duration, distance, rest
-            workDao.insertTemplateExercise(new TemplateExercise(tId, ex.apiId, sets, reps, 0, 0, 0, 60));
+            // Fix: 6th parameter (Duration) is now INT, so 0 instead of 0.0
+            workDao.insertTemplateExercise(new TemplateExercise(tId, ex.apiId, sets, reps, 0.0, 0, 0.0, 60));
         }
     }
 }

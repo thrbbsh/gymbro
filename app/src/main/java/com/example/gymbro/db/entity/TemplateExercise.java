@@ -28,7 +28,7 @@ public class TemplateExercise {
     public int targetSets;
     public int targetReps;
     public double targetWeight;
-    public int targetDuration;
+    public int targetDuration; // Integer as requested
     public double targetDistance;
     public int restSeconds;
 
