@@ -18,7 +18,7 @@ import com.example.gymbro.EventDecorator;
 import com.example.gymbro.R;
 import com.example.gymbro.adapter.HistoryAdapter;
 import com.example.gymbro.db.AppDatabase;
-import com.example.gymbro.db.model.WorkoutSessionWithTemplate;
+import com.example.gymbro.db.model.WorkoutSessionWithDetails;
 import com.prolificinteractive.materialcalendarview.CalendarDay;
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 import com.prolificinteractive.materialcalendarview.format.ArrayWeekDayFormatter;
@@ -42,7 +42,7 @@ public class StatisticsActivity extends AppCompatActivity {
     private MaterialCalendarView calendarView;
     private HistoryAdapter adapter;
     private AppDatabase db;
-    private List<WorkoutSessionWithTemplate> allSessions = new ArrayList<>();
+    private List<WorkoutSessionWithDetails> allSessions = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,14 +98,13 @@ public class StatisticsActivity extends AppCompatActivity {
 
     private void loadAllHistory() {
         Executors.newSingleThreadExecutor().execute(() -> {
-            // Get sessions along with their template names
-            allSessions = db.historyDao().getAllSessionsWithTemplate();
+            allSessions = db.historyDao().getAllSessionsWithDetails();
             
             // Sort sessions by time
             Collections.sort(allSessions, Comparator.comparingLong(s -> s.session.date));
             
             HashSet<CalendarDay> workoutDates = new HashSet<>();
-            for (WorkoutSessionWithTemplate wrapper : allSessions) {
+            for (WorkoutSessionWithDetails wrapper : allSessions) {
                 Calendar cal = Calendar.getInstance();
                 cal.setTimeInMillis(wrapper.session.date);
                 workoutDates.add(CalendarDay.from(cal));
@@ -129,21 +128,18 @@ public class StatisticsActivity extends AppCompatActivity {
         SimpleDateFormat dateSdf = new SimpleDateFormat("MMM dd, yyyy", Locale.US);
         SimpleDateFormat timeSdf = new SimpleDateFormat("HH:mm", Locale.US);
 
-        for (WorkoutSessionWithTemplate wrapper : allSessions) {
+        for (WorkoutSessionWithDetails details : allSessions) {
             Calendar sessionCal = Calendar.getInstance();
-            sessionCal.setTimeInMillis(wrapper.session.date);
+            sessionCal.setTimeInMillis(details.session.date);
 
             if (sessionCal.get(Calendar.YEAR) == year &&
                 sessionCal.get(Calendar.MONTH) == month &&
                 sessionCal.get(Calendar.DAY_OF_MONTH) == dayOfMonth) {
 
-                String dateStr = dateSdf.format(new Date(wrapper.session.date));
-                String timeStr = timeSdf.format(new Date(wrapper.session.date));
+                String dateStr = dateSdf.format(new Date(details.session.date));
+                String timeStr = timeSdf.format(new Date(details.session.date));
                 
-                // Now we get the actual template name from the relation
-                String name = wrapper.template != null ? wrapper.template.name : "Unknown Workout";
-                
-                filteredItems.add(new HistoryAdapter.HistoryItem(name, dateStr, timeStr, "Completed"));
+                filteredItems.add(new HistoryAdapter.HistoryItem(details, dateStr, timeStr));
             }
         }
 

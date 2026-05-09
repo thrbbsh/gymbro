@@ -15,6 +15,7 @@ import com.example.gymbro.db.dao.HistoryDao;
 import com.example.gymbro.db.dao.WorkoutDao;
 import com.example.gymbro.db.entity.Exercise;
 import com.example.gymbro.db.entity.SessionExercise;
+import com.example.gymbro.db.entity.SessionSet;
 import com.example.gymbro.db.entity.TemplateExercise;
 import com.example.gymbro.db.entity.WorkoutSession;
 import com.example.gymbro.db.entity.WorkoutTemplate;
@@ -26,8 +27,9 @@ import java.util.concurrent.Executors;
         WorkoutTemplate.class,
         TemplateExercise.class,
         WorkoutSession.class,
-        SessionExercise.class
-}, version = 23, exportSchema = false)
+        SessionExercise.class,
+        SessionSet.class
+}, version = 24, exportSchema = false)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
     public abstract ExerciseDao exerciseDao();
@@ -101,7 +103,6 @@ public abstract class AppDatabase extends RoomDatabase {
     private static void addExerciseToTemplateByName(ExerciseDao exDao, WorkoutDao workDao, int tId, String name, int sets, int reps) {
         Exercise ex = exDao.findByName("%" + name + "%");
         if (ex != null) {
-            // Fix: 6th parameter (Duration) is now INT, so 0 instead of 0.0
             workDao.insertTemplateExercise(new TemplateExercise(tId, ex.apiId, sets, reps, 0.0, 0, 0.0, 60));
         }
     }

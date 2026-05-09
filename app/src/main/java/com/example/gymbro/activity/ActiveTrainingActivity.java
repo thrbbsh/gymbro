@@ -37,12 +37,17 @@ import com.example.gymbro.BuildConfig;
 import com.example.gymbro.R;
 import com.example.gymbro.db.AppDatabase;
 import com.example.gymbro.db.entity.MeasureType;
+import com.example.gymbro.db.entity.SessionExercise;
+import com.example.gymbro.db.entity.SessionSet;
+import com.example.gymbro.db.entity.WorkoutSession;
 import com.example.gymbro.db.model.TemplateExerciseWithDetails;
 import com.example.gymbro.network.RetrofitClient;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.Executors;
 
 import coil.ComponentRegistry;
@@ -68,6 +73,10 @@ public class ActiveTrainingActivity extends AppCompatActivity {
     private boolean isResting = false;
     private ImageLoader gifLoader;
     private static final String PROXY_GIF_URL = "http://" + BuildConfig.PROXY_HOST_LAN + ":" + BuildConfig.PROXY_PORT + "/api/image?exerciseId=";
+
+    // Data collection for history
+    private List<SessionSet> performedSets = new ArrayList<>();
+    private Map<Integer, Integer> originalTargetSetsMap = new HashMap<>();
 
     // Timer logic
     private long startTime = 0L;
@@ -134,11 +143,10 @@ public class ActiveTrainingActivity extends AppCompatActivity {
         buttonSkipSet = findViewById(R.id.buttonSkipSet);
         buttonAddSet = findViewById(R.id.buttonAddSet);
 
-        // Initialize reusable inputs
-        inputWeight = new NumberInputView(findViewById(R.id.inputWeight), "Weight", 0.5, 999.9, 2.5);
-        inputReps = new NumberInputView(findViewById(R.id.inputReps), "Reps", 1.0, 999.0, 1.0);
-        inputDistance = new NumberInputView(findViewById(R.id.inputDistance), "Dist", 0.05, 999.9, 0.1);
-        inputDuration = new NumberInputView(findViewById(R.id.inputDuration), "Dur", 5.0, 14400.0, 1.0);
+        inputWeight = new NumberInputView(findViewById(R.id.inputWeight), "Weight", 0.0, 999.9, 2.5);
+        inputReps = new NumberInputView(findViewById(R.id.inputReps), "Reps", 0.0, 999.0, 1.0);
+        inputDistance = new NumberInputView(findViewById(R.id.inputDistance), "Dist", 0.0, 999.9, 0.1);
+        inputDuration = new NumberInputView(findViewById(R.id.inputDuration), "Dur", 0.0, 14400.0, 1.0);
     }
 
     private void setupHoldButton(Button button, int normalColorRes, int lightColorRes, Runnable action) {
@@ -205,6 +213,29 @@ public class ActiveTrainingActivity extends AppCompatActivity {
         });
     }
 
+    private void recordCurrentSet(boolean skipped) {
+        TemplateExerciseWithDetails current = exercises.get(currentExerciseIndex);
+        int originalTarget = originalTargetSetsMap.getOrDefault(currentExerciseIndex, current.templateExercise.targetSets);
+        boolean isExtra = currentSet > originalTarget;
+        
+        // Don't record if both extra and skipped
+        if (isExtra && skipped) return;
+
+        SessionSet set = new SessionSet(
+                0, // temp
+                currentSet,
+                (int) inputReps.getValue(),
+                inputWeight.getValue(),
+                (int) inputDuration.getValue(),
+                inputDistance.getValue(),
+                isExtra,
+                skipped
+        );
+        // We use set.id to temporarily store the exercise index for mapping during save
+        set.id = currentExerciseIndex;
+        performedSets.add(set);
+    }
+
     private void skipSetAction() {
         if (exercises.isEmpty()) return;
         TemplateExerciseWithDetails current = exercises.get(currentExerciseIndex);
@@ -224,38 +255,60 @@ public class ActiveTrainingActivity extends AppCompatActivity {
     private void addExtraSet() {
         if (exercises.isEmpty()) return;
         TemplateExerciseWithDetails current = exercises.get(currentExerciseIndex);
+        // Store original target if not already stored
+        if (!originalTargetSetsMap.containsKey(currentExerciseIndex)) {
+            originalTargetSetsMap.put(currentExerciseIndex, current.templateExercise.targetSets);
+        }
         current.templateExercise.targetSets++;
         updateUI();
         Toast.makeText(this, "Extra set added", Toast.LENGTH_SHORT).show();
     }
 
-    private void initGifLoader() {
-        ComponentRegistry.Builder componentsBuilder = new ComponentRegistry.Builder();
-        if (Build.VERSION.SDK_INT >= 28) {
-            componentsBuilder.add(new ImageDecoderDecoder.Factory());
-        } else {
-            componentsBuilder.add(new GifDecoder.Factory());
-        }
-
-        gifLoader = new ImageLoader.Builder(this)
-                .okHttpClient(RetrofitClient.getOkHttpClient(this))
-                .components(componentsBuilder.build())
-                .build();
-    }
-
     private void loadExercises(int templateId) {
         Executors.newSingleThreadExecutor().execute(() -> {
             exercises = db.workoutDao().getExercisesForTemplateWithDetails(templateId);
+            for (int i = 0; i < exercises.size(); i++) {
+                originalTargetSetsMap.put(i, exercises.get(i).templateExercise.targetSets);
+            }
             runOnUiThread(this::updateUI);
         });
     }
 
-    private void loadGif(String apiId) {
-        if (apiId == null || apiId.isEmpty()) return;
-        String url = PROXY_GIF_URL + apiId;
-        ImageRequest request = new ImageRequest.Builder(this)
-                .data(url).target(imageExerciseGif).crossfade(true).build();
-        gifLoader.enqueue(request);
+    private void finishWorkout() {
+        new AlertDialog.Builder(this)
+                .setTitle("Workout Completed!")
+                .setMessage("Saving results...")
+                .setCancelable(false)
+                .show();
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+            int templateId = getIntent().getIntExtra("TEMPLATE_ID", -1);
+            long sessionId = db.historyDao().insertSession(new WorkoutSession(templateId, System.currentTimeMillis()));
+
+            for (int i = 0; i < exercises.size(); i++) {
+                TemplateExerciseWithDetails ex = exercises.get(i);
+                SessionExercise sessionEx = new SessionExercise((int) sessionId, ex.exercise.apiId, 0, 0, 0.0, 0, 0.0, 0);
+                long sessionExId = db.historyDao().insertSessionExercise(sessionEx);
+
+                for (SessionSet set : performedSets) {
+                    if (set.id == i) { // Mapping by temp index
+                        set.sessionExerciseId = (int) sessionExId;
+                        set.id = 0; // Reset for auto-gen
+                        db.historyDao().insertSessionSet(set);
+                    }
+                }
+            }
+
+            runOnUiThread(() -> {
+                Intent mainIntent = new Intent(ActiveTrainingActivity.this, MainActivity.class);
+                mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(mainIntent);
+                Intent statsIntent = new Intent(ActiveTrainingActivity.this, StatisticsActivity.class);
+                statsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(statsIntent);
+                finish();
+            });
+        });
     }
 
     private void handleNext() {
@@ -272,6 +325,7 @@ public class ActiveTrainingActivity extends AppCompatActivity {
             stopRestTimer();
             startNextSet(current);
         } else {
+            recordCurrentSet(false);
             if (isTimerRunning) {
                 stopStopwatch();
                 return;
@@ -288,7 +342,7 @@ public class ActiveTrainingActivity extends AppCompatActivity {
     private boolean validateCurrentInputs() {
         TemplateExerciseWithDetails current = exercises.get(currentExerciseIndex);
         MeasureType type = current.exercise.measureType != null ? current.exercise.measureType : MeasureType.WEIGHT_REPS;
-        
+
         switch (type) {
             case WEIGHT_REPS:
                 return inputWeight.isValid() && inputReps.isValid();
@@ -311,7 +365,7 @@ public class ActiveTrainingActivity extends AppCompatActivity {
             currentExerciseIndex++;
             currentSet = 1;
         }
-        
+
         if (currentExerciseIndex >= exercises.size()) {
             finishWorkout();
         } else {
@@ -332,7 +386,7 @@ public class ActiveTrainingActivity extends AppCompatActivity {
             imageExerciseGif.setVisibility(View.GONE);
             findViewById(R.id.layoutInputsContainer).setVisibility(View.GONE);
             buttonStopTimer.setVisibility(View.GONE);
-            
+
             // Hide extra actions during rest
             buttonSkipSet.setVisibility(View.GONE);
             buttonAddSet.setVisibility(View.GONE);
@@ -348,7 +402,7 @@ public class ActiveTrainingActivity extends AppCompatActivity {
             buttonRestPlus.setVisibility(View.VISIBLE);
             buttonRestMinus.setVisibility(View.VISIBLE);
             startRestTimer(current.templateExercise.restSeconds);
-            
+
             buttonNext.setVisibility(View.VISIBLE);
             buttonNext.setText("Skip Rest");
         } else {
@@ -367,7 +421,7 @@ public class ActiveTrainingActivity extends AppCompatActivity {
             buttonRestPlus.setVisibility(View.GONE);
             buttonRestMinus.setVisibility(View.GONE);
             stopRestTimer();
-            
+
             setupInputs(current, type);
             
             // Show extra actions during exercise
@@ -434,11 +488,11 @@ public class ActiveTrainingActivity extends AppCompatActivity {
         if (isTimerRunning) return;
         isTimerRunning = true;
         startTime = System.currentTimeMillis();
-        
+
         layoutTimerContainer.setVisibility(View.VISIBLE);
         buttonRestPlus.setVisibility(View.GONE);
         buttonRestMinus.setVisibility(View.GONE);
-        
+
         buttonStopTimer.setVisibility(View.VISIBLE);
         buttonNext.setVisibility(View.GONE);
         timerHandler.post(timerRunnable);
@@ -448,12 +502,12 @@ public class ActiveTrainingActivity extends AppCompatActivity {
         if (!isTimerRunning) return;
         isTimerRunning = false;
         timerHandler.removeCallbacks(timerRunnable);
-        
+
         layoutTimerContainer.setVisibility(View.GONE);
         buttonStopTimer.setVisibility(View.GONE);
         buttonNext.setVisibility(View.VISIBLE);
         buttonNext.setText("Next Set");
-        
+
         // Finalize duration input after stop
         inputDuration.show((double) elapsedSeconds);
     }
@@ -498,9 +552,27 @@ public class ActiveTrainingActivity extends AppCompatActivity {
         }
     };
 
-    /**
-     * Helper class for reusable number inputs with up/down arrows
-     */
+    private void initGifLoader() {
+        ComponentRegistry.Builder componentsBuilder = new ComponentRegistry.Builder();
+        if (Build.VERSION.SDK_INT >= 28) {
+            componentsBuilder.add(new ImageDecoderDecoder.Factory());
+        } else {
+            componentsBuilder.add(new GifDecoder.Factory());
+        }
+        gifLoader = new ImageLoader.Builder(this)
+                .okHttpClient(RetrofitClient.getOkHttpClient(this))
+                .components(componentsBuilder.build())
+                .build();
+    }
+
+    private void loadGif(String apiId) {
+        if (apiId == null || apiId.isEmpty()) return;
+        String url = PROXY_GIF_URL + apiId;
+        ImageRequest request = new ImageRequest.Builder(this)
+                .data(url).target(imageExerciseGif).crossfade(true).build();
+        gifLoader.enqueue(request);
+    }
+
     private class NumberInputView {
         private final View root;
         private final EditText editText;
@@ -517,10 +589,10 @@ public class ActiveTrainingActivity extends AppCompatActivity {
                 this.label.setText(labelText);
             }
             this.editText = root.findViewById(R.id.editTextValue);
-            
+
             root.findViewById(R.id.btnUp).setOnClickListener(v -> adjust(true));
             root.findViewById(R.id.btnDown).setOnClickListener(v -> adjust(false));
-            
+
             this.editText.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -587,21 +659,5 @@ public class ActiveTrainingActivity extends AppCompatActivity {
                 .setMessage("Are you sure you want to interrupt your workout?")
                 .setPositiveButton("Yes, Quit", (dialog, which) -> finish())
                 .setNegativeButton("No, Continue", null).show();
-    }
-
-    private void finishWorkout() {
-        new AlertDialog.Builder(this)
-                .setTitle("Workout Completed!")
-                .setMessage("Congratulations! You have successfully finished your training session.")
-                .setCancelable(false)
-                .setPositiveButton("Go to Statistics", (dialog, which) -> {
-                    Intent mainIntent = new Intent(ActiveTrainingActivity.this, MainActivity.class);
-                    mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                    startActivity(mainIntent);
-                    Intent statsIntent = new Intent(ActiveTrainingActivity.this, StatisticsActivity.class);
-                    statsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(statsIntent);
-                    finish();
-                }).show();
     }
 }
