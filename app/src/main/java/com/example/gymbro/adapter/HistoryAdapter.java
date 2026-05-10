@@ -10,7 +10,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.gymbro.R;
@@ -20,6 +19,7 @@ import com.example.gymbro.db.model.WorkoutSessionWithDetails;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryViewHolder> {
 
@@ -65,12 +65,15 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
         holder.textShowDetails.setCompoundDrawablePadding(8);
 
         holder.layoutDetailsContainer.setVisibility(item.isExpanded ? View.VISIBLE : View.GONE);
+        holder.detailsDivider.setVisibility(item.isExpanded ? View.VISIBLE : View.GONE);
 
         holder.textShowDetails.setOnClickListener(v -> {
             item.isExpanded = !item.isExpanded;
             notifyItemChanged(position);
         });
 
+        holder.textResult.setText("Completed");
+        
         if (item.isExpanded) {
             populateDetails(holder.layoutDetailsContainer, details.exercises);
         }
@@ -87,7 +90,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
             exTitle.setTypeface(null, Typeface.BOLD);
             exTitle.setPadding(0, 16, 0, 4);
             exTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-            exTitle.setTextColor(ContextCompat.getColor(container.getContext(), R.color.black));
+            exTitle.setTextColor(0xFF000000);
             container.addView(exTitle);
 
             // Sets
@@ -102,13 +105,13 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
                     int textColor;
                     if (set.isSkipped) {
                         sb.append("Skipped");
-                        textColor = 0xFF9E9E9E; // Grey
+                        textColor = 0xFF9E9E9E; // Grey for Skipped
                     } else {
                         List<String> metrics = new ArrayList<>();
                         if (set.weight > 0) metrics.add(set.weight + " kg");
                         if (set.reps > 0) metrics.add(set.reps + " reps");
                         if (set.duration > 0) metrics.add(set.duration + "s");
-                        if (set.distance > 0) metrics.add(set.distance + " km");
+                        if (set.distance > 0) metrics.add(String.format(Locale.US, "%.1f km", set.distance));
                         
                         if (metrics.isEmpty()) {
                             sb.append("Completed");
@@ -118,7 +121,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
                         
                         if (set.isExtra) {
                             sb.append(" (Extra Set)");
-                            textColor = 0xFF1976D2; // Material Blue for Extra Sets
+                            textColor = 0xFF1976D2; // Blue for Extra Sets
                         } else {
                             textColor = 0xFF000000; // Black for normal sets
                         }
@@ -126,7 +129,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
 
                     TextView setInfo = new TextView(container.getContext());
                     setInfo.setText(sb.toString());
-                    setInfo.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+                    setInfo.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
                     setInfo.setPadding(24, 2, 0, 2);
                     setInfo.setTextColor(textColor);
                     container.addView(setInfo);
@@ -142,6 +145,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
 
     static class HistoryViewHolder extends RecyclerView.ViewHolder {
         TextView textName, textDate, textTime, textResult, textShowDetails;
+        View detailsDivider;
         LinearLayout layoutDetailsContainer;
 
         public HistoryViewHolder(@NonNull View itemView) {
@@ -151,6 +155,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
             textTime = itemView.findViewById(R.id.textHistoryTime);
             textResult = itemView.findViewById(R.id.textHistoryResult);
             textShowDetails = itemView.findViewById(R.id.textShowDetails);
+            detailsDivider = itemView.findViewById(R.id.detailsDivider);
             layoutDetailsContainer = itemView.findViewById(R.id.layoutDetailsContainer);
         }
     }

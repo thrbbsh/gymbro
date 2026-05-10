@@ -20,6 +20,8 @@ import com.example.gymbro.db.entity.TemplateExercise;
 import com.example.gymbro.db.entity.WorkoutSession;
 import com.example.gymbro.db.entity.WorkoutTemplate;
 
+import java.util.Calendar;
+import java.util.Random;
 import java.util.concurrent.Executors;
 
 @Database(entities = {
@@ -29,7 +31,7 @@ import java.util.concurrent.Executors;
         WorkoutSession.class,
         SessionExercise.class,
         SessionSet.class
-}, version = 24, exportSchema = false)
+}, version = 42, exportSchema = false)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
     public abstract ExerciseDao exerciseDao();
@@ -51,6 +53,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     super.onCreate(db);
                                     Executors.newSingleThreadExecutor().execute(() -> {
                                         prepopulateTemplates(INSTANCE);
+                                        prepopulateSessions(INSTANCE);
                                     });
                                 }
 
@@ -59,6 +62,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     super.onDestructiveMigration(db);
                                     Executors.newSingleThreadExecutor().execute(() -> {
                                         prepopulateTemplates(INSTANCE);
+                                        prepopulateSessions(INSTANCE);
                                     });
                                 }
                             })
@@ -92,6 +96,44 @@ public abstract class AppDatabase extends RoomDatabase {
             addExerciseToTemplateByName(exerciseDao, workoutDao, lowerBodyId, "deadlift", 3, 8);
             addExerciseToTemplateByName(exerciseDao, workoutDao, lowerBodyId, "leg press", 3, 12);
         }
+    }
+
+    public static void prepopulateSessions(AppDatabase db) {
+        if (db == null) return;
+        HistoryDao historyDao = db.historyDao();
+        WorkoutDao workoutDao = db.workoutDao();
+
+        if (!historyDao.getAllSessions().isEmpty()) return;
+
+        WorkoutTemplate fullBody = workoutDao.getTemplateByName("Full Body Basics");
+        WorkoutTemplate upperBody = workoutDao.getTemplateByName("Upper Body Focus");
+
+        if (fullBody == null || upperBody == null) {
+            prepopulateTemplates(db);
+            fullBody = workoutDao.getTemplateByName("Full Body Basics");
+            upperBody = workoutDao.getTemplateByName("Upper Body Focus");
+        }
+
+        if (fullBody == null || upperBody == null) {
+            Log.e("AppDatabase", "Failed to find templates for session prepopulation");
+            return;
+        }
+
+        Random random = new Random();
+        int[] months = {Calendar.JANUARY, Calendar.FEBRUARY, Calendar.MARCH};
+
+        for (int i = 0; i < 15; i++) {
+            Calendar cal = Calendar.getInstance();
+            cal.set(2026, months[i % 3], 1 + random.nextInt(25));
+            cal.set(Calendar.HOUR_OF_DAY, 8 + random.nextInt(12));
+            cal.set(Calendar.MINUTE, random.nextInt(60));
+
+            WorkoutTemplate template = (i % 2 == 0) ? fullBody : upperBody;
+
+            WorkoutSession session = new WorkoutSession(template.id, cal.getTimeInMillis());
+            historyDao.insertSessionInternal(session);
+        }
+        Log.d("AppDatabase", "Prepopulated 15 empty test sessions for Jan-Mar 2026");
     }
 
     private static int getOrCreateTemplate(WorkoutDao dao, String name) {
