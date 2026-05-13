@@ -19,31 +19,27 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.gymbro.R;
 import com.example.gymbro.adapter.EditExerciseAdapter;
 import com.example.gymbro.adapter.SearchExerciseAdapter;
-import com.example.gymbro.db.AppDatabase;
 import com.example.gymbro.db.entity.Exercise;
-import com.example.gymbro.db.entity.TemplateExercise;
-import com.example.gymbro.db.entity.WorkoutTemplate;
 import com.example.gymbro.db.model.TemplateExerciseWithDetails;
+import com.example.gymbro.viewmodel.EditTemplateViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
 
 public class EditTemplateActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private EditExerciseAdapter adapter;
     private EditText editTextTemplateName;
-    private AppDatabase db;
+    private EditTemplateViewModel viewModel;
     private int templateId;
-    private WorkoutTemplate currentTemplate;
-    private List<TemplateExerciseWithDetails> exercises = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,24 +53,24 @@ public class EditTemplateActivity extends AppCompatActivity {
             return insets;
         });
 
+        viewModel = new ViewModelProvider(this).get(EditTemplateViewModel.class);
+
         recyclerView = findViewById(R.id.recyclerViewEditExercises);
         editTextTemplateName = findViewById(R.id.editTextTemplateName);
         Button buttonAddExercise = findViewById(R.id.buttonAddExercise);
         
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        db = AppDatabase.getDatabase(this);
 
         templateId = getIntent().getIntExtra("TEMPLATE_ID", -1);
 
         if (templateId != -1) {
-            loadTemplateData();
-            loadExercises();
+            viewModel.loadTemplateData(templateId);
         }
 
+        setupObservers();
         setupNameChangeListener();
         buttonAddExercise.setOnClickListener(v -> showAddExerciseDialog());
 
-        // Back button validation
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -91,13 +87,29 @@ public class EditTemplateActivity extends AppCompatActivity {
         });
     }
 
-    private void loadTemplateData() {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            currentTemplate = db.workoutDao().getTemplateById(templateId);
-            if (currentTemplate != null) {
-                runOnUiThread(() -> {
-                    editTextTemplateName.setText(currentTemplate.name);
+    private void setupObservers() {
+        viewModel.getTemplate().observe(this, template -> {
+            if (template != null && !editTextTemplateName.isFocused()) {
+                editTextTemplateName.setText(template.name);
+            }
+        });
+
+        viewModel.getExercises().observe(this, exercises -> {
+            if (adapter == null) {
+                adapter = new EditExerciseAdapter(new ArrayList<>(exercises), new EditExerciseAdapter.OnExerciseActionListener() {
+                    @Override
+                    public void onDelete(TemplateExerciseWithDetails item) {
+                        viewModel.deleteExercise(item.templateExercise);
+                    }
+
+                    @Override
+                    public void onUpdate(TemplateExerciseWithDetails item) {
+                        viewModel.updateExercise(item.templateExercise);
+                    }
                 });
+                recyclerView.setAdapter(adapter);
+            } else {
+                adapter.setItems(new ArrayList<>(exercises));
             }
         });
     }
@@ -106,59 +118,15 @@ public class EditTemplateActivity extends AppCompatActivity {
         editTextTemplateName.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 String newName = s.toString().trim();
                 if (!newName.isEmpty()) {
-                    updateTemplateName(newName);
+                    viewModel.updateTemplateName(newName);
                 }
             }
-
             @Override
             public void afterTextChanged(Editable s) {}
-        });
-    }
-
-    private void updateTemplateName(String newName) {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            if (currentTemplate != null) {
-                currentTemplate.name = newName;
-                db.workoutDao().updateTemplate(currentTemplate);
-            }
-        });
-    }
-
-    private void loadExercises() {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            exercises = db.workoutDao().getExercisesForTemplateWithDetails(templateId);
-            runOnUiThread(() -> {
-                adapter = new EditExerciseAdapter(exercises, new EditExerciseAdapter.OnExerciseActionListener() {
-                    @Override
-                    public void onDelete(TemplateExerciseWithDetails item) {
-                        deleteExercise(item);
-                    }
-
-                    @Override
-                    public void onUpdate(TemplateExerciseWithDetails item) {
-                        updateExerciseInDb(item.templateExercise);
-                    }
-                });
-                recyclerView.setAdapter(adapter);
-            });
-        });
-    }
-
-    private void deleteExercise(TemplateExerciseWithDetails item) {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            db.workoutDao().deleteTemplateExercise(item.templateExercise);
-            loadExercises();
-        });
-    }
-
-    private void updateExerciseInDb(TemplateExercise templateExercise) {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            db.workoutDao().updateTemplateExercise(templateExercise);
         });
     }
 
@@ -182,39 +150,26 @@ public class EditTemplateActivity extends AppCompatActivity {
 
         btnClose.setOnClickListener(v -> dialog.dismiss());
 
-        Executors.newSingleThreadExecutor().execute(() -> {
-            List<Exercise> allExercises = db.exerciseDao().getAllExercises();
-            runOnUiThread(() -> {
-                SearchExerciseAdapter searchAdapter = new SearchExerciseAdapter(allExercises, exercise -> {
-                    addExerciseToTemplate(exercise);
-                    dialog.dismiss();
-                });
-                allExercisesRecycler.setAdapter(searchAdapter);
+        viewModel.getAllExercises().observe(this, allExercises -> {
+            SearchExerciseAdapter searchAdapter = new SearchExerciseAdapter(allExercises, exercise -> {
+                viewModel.addExerciseToTemplate(templateId, exercise);
+                dialog.dismiss();
+            });
+            allExercisesRecycler.setAdapter(searchAdapter);
 
-                searchInput.addTextChangedListener(new TextWatcher() {
-                    @Override
-                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-                    @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {
-                        searchAdapter.filter(s.toString());
-                    }
-
-                    @Override
-                    public void afterTextChanged(Editable s) {}
-                });
+            searchInput.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    searchAdapter.filter(s.toString());
+                }
+                @Override
+                public void afterTextChanged(Editable s) {}
             });
         });
-
+        
+        viewModel.loadAllExercises();
         dialog.show();
-    }
-
-    private void addExerciseToTemplate(Exercise exercise) {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            // Initializing with zeros to trigger validation errors in UI
-            TemplateExercise newEx = new TemplateExercise(templateId, exercise.apiId, 0, 0, 0.0, 0, 0.0, 60);
-            db.workoutDao().insertTemplateExercise(newEx);
-            loadExercises();
-        });
     }
 }

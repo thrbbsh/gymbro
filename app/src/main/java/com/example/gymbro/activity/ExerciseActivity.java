@@ -11,26 +11,19 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.gymbro.R;
 import com.example.gymbro.adapter.ExerciseAdapter;
-import com.example.gymbro.db.AppDatabase;
-import com.example.gymbro.db.entity.WorkoutTemplate;
-import com.example.gymbro.db.model.TemplateExerciseWithDetails;
-
-import java.util.List;
-import java.util.concurrent.Executors;
+import com.example.gymbro.viewmodel.ExerciseViewModel;
 
 public class ExerciseActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private TextView textViewTitle;
-    private ImageButton buttonEditTemplate;
-    private Button buttonStartWorkout;
-    private AppDatabase db;
-    private ExerciseAdapter adapter;
+    private ExerciseViewModel viewModel;
     private int templateId;
 
     @Override
@@ -45,19 +38,22 @@ public class ExerciseActivity extends AppCompatActivity {
             return insets;
         });
 
+        viewModel = new ViewModelProvider(this).get(ExerciseViewModel.class);
+
         recyclerView = findViewById(R.id.recyclerViewExercises);
         textViewTitle = findViewById(R.id.textViewWorkoutTitle);
-        buttonEditTemplate = findViewById(R.id.buttonEditTemplate);
-        buttonStartWorkout = findViewById(R.id.buttonStartWorkout);
+        ImageButton buttonEditTemplate = findViewById(R.id.buttonEditTemplate);
+        Button buttonStartWorkout = findViewById(R.id.buttonStartWorkout);
         
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        db = AppDatabase.getDatabase(this);
 
         templateId = getIntent().getIntExtra("TEMPLATE_ID", -1);
         String initialName = getIntent().getStringExtra("TEMPLATE_NAME");
         if (initialName != null) {
             textViewTitle.setText(initialName);
         }
+
+        setupObservers();
 
         buttonEditTemplate.setOnClickListener(v -> {
             Intent intent = new Intent(ExerciseActivity.this, EditTemplateActivity.class);
@@ -72,31 +68,23 @@ public class ExerciseActivity extends AppCompatActivity {
         });
     }
 
+    private void setupObservers() {
+        viewModel.getTemplate().observe(this, template -> {
+            if (template != null) {
+                textViewTitle.setText(template.name);
+            }
+        });
+
+        viewModel.getExercises().observe(this, exercises -> {
+            recyclerView.setAdapter(new ExerciseAdapter(exercises));
+        });
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
         if (templateId != -1) {
-            refreshTemplateInfo();
-            loadExercises(templateId);
+            viewModel.loadData(templateId);
         }
-    }
-
-    private void refreshTemplateInfo() {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            WorkoutTemplate template = db.workoutDao().getTemplateById(templateId);
-            if (template != null) {
-                runOnUiThread(() -> textViewTitle.setText(template.name));
-            }
-        });
-    }
-
-    private void loadExercises(int templateId) {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            List<TemplateExerciseWithDetails> exercises = db.workoutDao().getExercisesForTemplateWithDetails(templateId);
-            runOnUiThread(() -> {
-                adapter = new ExerciseAdapter(exercises);
-                recyclerView.setAdapter(adapter);
-            });
-        });
     }
 }

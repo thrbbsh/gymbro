@@ -57,12 +57,11 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
         holder.textName.setText(details.template != null ? details.template.name : "Unknown Workout");
         holder.textDate.setText(item.dateStr);
         holder.textTime.setText(item.timeStr);
+        holder.textResult.setText("Completed");
 
-        // Update Toggle Text and Icon
         holder.textShowDetails.setText(item.isExpanded ? "Hide details" : "Show details");
         holder.textShowDetails.setCompoundDrawablesWithIntrinsicBounds(0, 0, 
                 item.isExpanded ? R.drawable.ic_arrow_up : R.drawable.ic_arrow_down, 0);
-        holder.textShowDetails.setCompoundDrawablePadding(8);
 
         holder.layoutDetailsContainer.setVisibility(item.isExpanded ? View.VISIBLE : View.GONE);
         holder.detailsDivider.setVisibility(item.isExpanded ? View.VISIBLE : View.GONE);
@@ -72,8 +71,6 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
             notifyItemChanged(position);
         });
 
-        holder.textResult.setText("Completed");
-        
         if (item.isExpanded) {
             populateDetails(holder.layoutDetailsContainer, details.exercises);
         }
@@ -84,56 +81,47 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
         if (exercises == null) return;
 
         for (SessionExerciseWithSets exWithSets : exercises) {
-            // Exercise Name Header
+            // Exercise Title
             TextView exTitle = new TextView(container.getContext());
             exTitle.setText(exWithSets.exercise != null ? exWithSets.exercise.name : "Exercise");
             exTitle.setTypeface(null, Typeface.BOLD);
             exTitle.setPadding(0, 16, 0, 4);
             exTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-            exTitle.setTextColor(0xFF000000);
+            exTitle.setTextColor(0xFF212121);
             container.addView(exTitle);
 
-            // Sets
+            // Optimization: Combine all sets into one TextView using StringBuilder
+            // This is much faster than creating a View for each set
             if (exWithSets.sets != null) {
+                StringBuilder sb = new StringBuilder();
                 for (SessionSet set : exWithSets.sets) {
-                    // Skip if it's both extra and skipped
                     if (set.isExtra && set.isSkipped) continue;
-
-                    StringBuilder sb = new StringBuilder();
+                    
                     sb.append("Set ").append(set.setNumber).append(": ");
-
-                    int textColor;
                     if (set.isSkipped) {
                         sb.append("Skipped");
-                        textColor = 0xFF9E9E9E; // Grey for Skipped
                     } else {
                         List<String> metrics = new ArrayList<>();
-                        if (set.weight > 0) metrics.add(set.weight + " kg");
+                        if (set.weight > 0) metrics.add(String.format(Locale.US, "%.1f kg", set.weight));
                         if (set.reps > 0) metrics.add(set.reps + " reps");
                         if (set.duration > 0) metrics.add(set.duration + "s");
                         if (set.distance > 0) metrics.add(String.format(Locale.US, "%.1f km", set.distance));
                         
-                        if (metrics.isEmpty()) {
-                            sb.append("Completed");
-                        } else {
-                            sb.append(TextUtils.join(" • ", metrics));
-                        }
+                        if (metrics.isEmpty()) sb.append("Completed");
+                        else sb.append(TextUtils.join(" • ", metrics));
                         
-                        if (set.isExtra) {
-                            sb.append(" (Extra Set)");
-                            textColor = 0xFF1976D2; // Blue for Extra Sets
-                        } else {
-                            textColor = 0xFF000000; // Black for normal sets
-                        }
+                        if (set.isExtra) sb.append(" (Extra)");
                     }
-
-                    TextView setInfo = new TextView(container.getContext());
-                    setInfo.setText(sb.toString());
-                    setInfo.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-                    setInfo.setPadding(24, 2, 0, 2);
-                    setInfo.setTextColor(textColor);
-                    container.addView(setInfo);
+                    sb.append("\n");
                 }
+                
+                TextView setsInfo = new TextView(container.getContext());
+                setsInfo.setText(sb.toString().trim());
+                setsInfo.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+                setsInfo.setPadding(24, 0, 0, 0);
+                setsInfo.setLineSpacing(0, 1.2f);
+                setsInfo.setTextColor(0xFF757575);
+                container.addView(setsInfo);
             }
         }
     }

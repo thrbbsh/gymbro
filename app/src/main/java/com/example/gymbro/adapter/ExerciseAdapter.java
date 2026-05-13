@@ -14,10 +14,11 @@ import com.example.gymbro.db.entity.MeasureType;
 import com.example.gymbro.db.model.TemplateExerciseWithDetails;
 
 import java.util.List;
+import java.util.Locale;
 
 public class ExerciseAdapter extends RecyclerView.Adapter<ExerciseAdapter.ExerciseViewHolder> {
 
-    private List<TemplateExerciseWithDetails> items;
+    private final List<TemplateExerciseWithDetails> items;
 
     public ExerciseAdapter(List<TemplateExerciseWithDetails> items) {
         this.items = items;
@@ -35,44 +36,37 @@ public class ExerciseAdapter extends RecyclerView.Adapter<ExerciseAdapter.Exerci
         TemplateExerciseWithDetails item = items.get(position);
         
         holder.textViewName.setText(item.exercise.name);
-        
-        // Format Primary and Secondary Muscles with |
+        holder.textViewMuscle.setText(getFormattedMuscles(item));
+        holder.textViewTarget.setText(getFormattedTarget(item));
+    }
+
+    private String getFormattedMuscles(TemplateExerciseWithDetails item) {
         StringBuilder muscles = new StringBuilder(item.exercise.target);
         if (item.exercise.secondaryMuscles != null && !item.exercise.secondaryMuscles.isEmpty()) {
-            muscles.append(" | ");
-            muscles.append(TextUtils.join(", ", item.exercise.secondaryMuscles));
+            muscles.append(" | ").append(TextUtils.join(", ", item.exercise.secondaryMuscles));
         }
-        holder.textViewMuscle.setText(muscles.toString());
-        
-        // Format target info based on MeasureType
-        MeasureType type = item.exercise.measureType;
-        if (type == null) type = MeasureType.WEIGHT_REPS;
-        
-        StringBuilder target = new StringBuilder();
+        return muscles.toString();
+    }
+
+    private String getFormattedTarget(TemplateExerciseWithDetails item) {
+        MeasureType type = item.exercise.measureType != null ? item.exercise.measureType : MeasureType.WEIGHT_REPS;
         int sets = item.templateExercise.targetSets;
+        int reps = item.templateExercise.targetReps;
         
         switch (type) {
             case WEIGHT_REPS:
-                target.append(sets).append(" sets x ").append(item.templateExercise.targetReps).append(" reps");
-                if (item.templateExercise.targetWeight > 0) {
-                    target.append(" @ ").append(item.templateExercise.targetWeight).append(" kg");
-                }
-                break;
+                String weightStr = item.templateExercise.targetWeight > 0 ? String.format(Locale.US, " @ %.1f kg", item.templateExercise.targetWeight) : "";
+                return String.format(Locale.US, "%d sets x %d reps%s", sets, reps, weightStr);
             case BODYWEIGHT_REPS:
-                target.append(sets).append(" sets x ").append(item.templateExercise.targetReps).append(" reps (Bodyweight)");
-                break;
+                return String.format(Locale.US, "%d sets x %d reps (Bodyweight)", sets, reps);
             case DURATION:
-                target.append(sets).append(" sets x ").append(item.templateExercise.targetDuration).append("s (Hold)");
-                break;
+                return String.format(Locale.US, "%d sets x %ds (Hold)", sets, item.templateExercise.targetDuration);
             case DISTANCE_TIME:
-                if (item.templateExercise.targetDistance > 0) {
-                    target.append(item.templateExercise.targetDistance).append(" km in ");
-                }
-                target.append(item.templateExercise.targetDuration).append("s");
-                break;
+                String distStr = item.templateExercise.targetDistance > 0 ? String.format(Locale.US, "%.1f km in ", item.templateExercise.targetDistance) : "";
+                return String.format(Locale.US, "%s%ds", distStr, item.templateExercise.targetDuration);
+            default:
+                return "";
         }
-        
-        holder.textViewTarget.setText(target.toString());
     }
 
     @Override

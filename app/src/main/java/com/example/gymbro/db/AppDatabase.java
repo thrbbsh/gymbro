@@ -31,7 +31,7 @@ import java.util.concurrent.Executors;
         WorkoutSession.class,
         SessionExercise.class,
         SessionSet.class
-}, version = 42, exportSchema = false)
+}, version = 43, exportSchema = false)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
     public abstract ExerciseDao exerciseDao();
@@ -103,7 +103,8 @@ public abstract class AppDatabase extends RoomDatabase {
         HistoryDao historyDao = db.historyDao();
         WorkoutDao workoutDao = db.workoutDao();
 
-        if (!historyDao.getAllSessions().isEmpty()) return;
+        // Updated to use the common method for checking emptiness
+        if (!historyDao.getAllSessionsWithDetails().isEmpty()) return;
 
         WorkoutTemplate fullBody = workoutDao.getTemplateByName("Full Body Basics");
         WorkoutTemplate upperBody = workoutDao.getTemplateByName("Upper Body Focus");
@@ -131,7 +132,7 @@ public abstract class AppDatabase extends RoomDatabase {
             WorkoutTemplate template = (i % 2 == 0) ? fullBody : upperBody;
 
             WorkoutSession session = new WorkoutSession(template.id, cal.getTimeInMillis());
-            historyDao.insertSessionInternal(session);
+            historyDao.insertSession(session);
         }
         Log.d("AppDatabase", "Prepopulated 15 empty test sessions for Jan-Mar 2026");
     }

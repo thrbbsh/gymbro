@@ -9,21 +9,13 @@ import com.example.gymbro.db.entity.SessionExercise;
 import com.example.gymbro.db.entity.SessionSet;
 import com.example.gymbro.db.entity.WorkoutSession;
 import com.example.gymbro.db.model.WorkoutSessionWithDetails;
-import com.example.gymbro.db.model.WorkoutSessionWithTemplate;
 
 import java.util.List;
 
 @Dao
 public abstract class HistoryDao {
     @Insert
-    public abstract long insertSessionInternal(WorkoutSession session);
-    
-    public long insertSession(WorkoutSession session) {
-        if (session.date > System.currentTimeMillis()) {
-            return -1;
-        }
-        return insertSessionInternal(session);
-    }
+    public abstract long insertSession(WorkoutSession session);
 
     @Insert
     public abstract long insertSessionExercise(SessionExercise sessionExercise);
@@ -31,20 +23,32 @@ public abstract class HistoryDao {
     @Insert
     public abstract void insertSessionSet(SessionSet sessionSet);
 
-    @Query("SELECT * FROM workout_sessions ORDER BY date DESC")
-    public abstract List<WorkoutSession> getAllSessions();
-
-    @Transaction
-    @Query("SELECT * FROM workout_sessions ORDER BY date DESC")
-    public abstract List<WorkoutSessionWithTemplate> getAllSessionsWithTemplate();
-
     @Transaction
     @Query("SELECT * FROM workout_sessions ORDER BY date DESC")
     public abstract List<WorkoutSessionWithDetails> getAllSessionsWithDetails();
 
-    @Query("SELECT * FROM session_exercises WHERE sessionId = :sessionId")
-    public abstract List<SessionExercise> getExercisesForSession(int sessionId);
+    @Transaction
+    @Query("SELECT * FROM workout_sessions WHERE date >= :start AND date < :end ORDER BY date ASC")
+    public abstract List<WorkoutSessionWithDetails> getSessionsInPeriod(long start, long end);
 
-    @Query("SELECT * FROM session_sets WHERE sessionExerciseId = :sessionExerciseId")
-    public abstract List<SessionSet> getSetsForExercise(int sessionExerciseId);
+    @Query("SELECT COUNT(*) FROM workout_sessions WHERE date >= :start AND date < :end")
+    public abstract int getSessionCount(long start, long end);
+
+    @Query("SELECT SUM(s.weight * s.reps) FROM session_sets s " +
+           "JOIN session_exercises e ON s.sessionExerciseId = e.id " +
+           "JOIN workout_sessions w ON e.sessionId = w.id " +
+           "WHERE w.date >= :start AND w.date < :end AND s.isSkipped = 0")
+    public abstract Double getTotalTonnage(long start, long end);
+
+    @Query("SELECT SUM(s.distance) FROM session_sets s " +
+           "JOIN session_exercises e ON s.sessionExerciseId = e.id " +
+           "JOIN workout_sessions w ON e.sessionId = w.id " +
+           "WHERE w.date >= :start AND w.date < :end AND s.isSkipped = 0")
+    public abstract Double getTotalDistance(long start, long end);
+
+    @Query("SELECT SUM(s.duration) FROM session_sets s " +
+           "JOIN session_exercises e ON s.sessionExerciseId = e.id " +
+           "JOIN workout_sessions w ON e.sessionId = w.id " +
+           "WHERE w.date >= :start AND w.date < :end AND s.isSkipped = 0")
+    public abstract Long getTotalDuration(long start, long end);
 }

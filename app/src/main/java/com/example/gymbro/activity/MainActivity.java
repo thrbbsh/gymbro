@@ -3,7 +3,6 @@ package com.example.gymbro.activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.InputType;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -16,28 +15,18 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.gymbro.R;
 import com.example.gymbro.adapter.WorkoutAdapter;
-import com.example.gymbro.db.AppDatabase;
-import com.example.gymbro.db.entity.Exercise;
 import com.example.gymbro.db.entity.WorkoutTemplate;
-import com.example.gymbro.network.RetrofitClient;
 import com.example.gymbro.utils.ExerciseMeasureHelper;
+import com.example.gymbro.viewmodel.MainViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-import java.util.List;
-import java.util.concurrent.Executors;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
 public class MainActivity extends AppCompatActivity {
-
-    private static final String TAG = "MainActivity";
 
     private RecyclerView recyclerView;
     private TextView textLoading;
@@ -46,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private View syncErrorLayout;
     private TextView textSyncError;
     private WorkoutAdapter adapter;
-    private AppDatabase db;
+    private MainViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,10 +49,17 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        // Initialize MeasureType exceptions from assets
         ExerciseMeasureHelper.loadExceptions(this);
 
-        db = AppDatabase.getDatabase(this);
+        viewModel = new ViewModelProvider(this).get(MainViewModel.class);
+
+        initViews();
+        setupObservers();
+
+        viewModel.syncExercises();
+    }
+
+    private void initViews() {
         recyclerView = findViewById(R.id.recyclerViewTemplates);
         textLoading = findViewById(R.id.textLoadingTemplates);
         syncOverlay = findViewById(R.id.syncOverlay);
@@ -86,17 +82,53 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        findViewById(R.id.btnRetrySync).setOnClickListener(v -> syncExercisesWithProxy());
+        findViewById(R.id.btnRetrySync).setOnClickListener(v -> viewModel.syncExercises());
 
         fabAddTemplate.setOnClickListener(v -> showAddTemplateDialog());
+    }
 
-        syncExercisesWithProxy();
+    private void setupObservers() {
+        viewModel.getTemplates().observe(this, templates -> {
+            textLoading.setVisibility(View.GONE);
+            recyclerView.setVisibility(View.VISIBLE);
+            
+            adapter = new WorkoutAdapter(templates, new WorkoutAdapter.OnTemplateActionListener() {
+                @Override
+                public void onTemplateClick(WorkoutTemplate template) {
+                    Intent intent = new Intent(MainActivity.this, ExerciseActivity.class);
+                    intent.putExtra("TEMPLATE_ID", template.id);
+                    intent.putExtra("TEMPLATE_NAME", template.name);
+                    startActivity(intent);
+                }
+
+                @Override
+                public void onTemplateDelete(WorkoutTemplate template) {
+                    showDeleteConfirmation(template);
+                }
+            });
+            recyclerView.setAdapter(adapter);
+        });
+
+        viewModel.isSyncing().observe(this, syncing -> {
+            syncOverlay.setVisibility(syncing ? View.VISIBLE : View.GONE);
+            syncLoadingLayout.setVisibility(syncing ? View.VISIBLE : View.GONE);
+            if (syncing) syncErrorLayout.setVisibility(View.GONE);
+        });
+
+        viewModel.getSyncError().observe(this, error -> {
+            if (error != null) {
+                syncOverlay.setVisibility(View.VISIBLE);
+                syncLoadingLayout.setVisibility(View.GONE);
+                syncErrorLayout.setVisibility(View.VISIBLE);
+                textSyncError.setText(error);
+            }
+        });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        loadTemplates();
+        viewModel.loadTemplates();
     }
 
     private void showAddTemplateDialog() {
@@ -113,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
         builder.setPositiveButton("Create", (dialog, which) -> {
             String name = input.getText().toString().trim();
             if (!name.isEmpty()) {
-                createNewTemplate(name);
+                viewModel.createTemplate(name);
             } else {
                 Toast.makeText(this, "Name cannot be empty", Toast.LENGTH_SHORT).show();
             }
@@ -123,125 +155,11 @@ public class MainActivity extends AppCompatActivity {
         builder.show();
     }
 
-    private void createNewTemplate(String name) {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            long id = db.workoutDao().insertTemplate(new WorkoutTemplate(name));
-            runOnUiThread(() -> {
-                loadTemplates();
-                Intent intent = new Intent(MainActivity.this, ExerciseActivity.class);
-                intent.putExtra("TEMPLATE_ID", (int) id);
-                intent.putExtra("TEMPLATE_NAME", name);
-                startActivity(intent);
-            });
-        });
-    }
-
-    private void syncExercisesWithProxy() {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            int currentCount = db.exerciseDao().getExerciseCount();
-            // If we already have a significant amount of exercises, skip sync
-            if (currentCount > 100) {
-                runOnUiThread(() -> syncOverlay.setVisibility(View.GONE));
-                return;
-            }
-
-            runOnUiThread(() -> {
-                syncOverlay.setVisibility(View.VISIBLE);
-                syncLoadingLayout.setVisibility(View.VISIBLE);
-                syncErrorLayout.setVisibility(View.GONE);
-            });
-
-            // Call proxy server which handles RapidAPI and returns the full list
-            RetrofitClient.getApiService(this).getExercises()
-                .enqueue(new Callback<List<Exercise>>() {
-                @Override
-                public void onResponse(Call<List<Exercise>> call, Response<List<Exercise>> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        Log.d(TAG, "Received " + response.body().size() + " exercises from proxy");
-                        saveExercisesToDb(response.body());
-                    } else {
-                        showSyncError("Sync failed (Code: " + response.code() + "). Make sure the proxy server is running.");
-                        Log.e(TAG, "Sync failed: " + response.message());
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<List<Exercise>> call, Throwable t) {
-                    showSyncError("Connection Error: " + t.getMessage()
-                            + "\nStart the Spring server (port from application.properties). "
-                            + "Emulator: host 10.0.2.2; phone: PC Wi‑Fi IP (see gymbro.proxy.host in local.properties).");
-                    Log.e(TAG, "Connection Error", t);
-                }
-            });
-        });
-    }
-
-    private void showSyncError(String message) {
-        runOnUiThread(() -> {
-            syncLoadingLayout.setVisibility(View.GONE);
-            syncErrorLayout.setVisibility(View.VISIBLE);
-            textSyncError.setText(message);
-        });
-    }
-
-    private void saveExercisesToDb(List<Exercise> exercises) {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            // Enrich exercises with MeasureType before saving
-            for (Exercise ex : exercises) {
-                ex.measureType = ExerciseMeasureHelper.guessMeasureType(
-                        ex.apiId, ex.name, ex.equipment, ex.instructions
-                );
-            }
-            db.exerciseDao().insertAll(exercises);
-            AppDatabase.prepopulateTemplates(db);
-            runOnUiThread(() -> {
-                syncOverlay.setVisibility(View.GONE);
-                loadTemplates();
-            });
-        });
-    }
-
-    private void loadTemplates() {
-        if (adapter == null) {
-            textLoading.setVisibility(View.VISIBLE);
-            recyclerView.setVisibility(View.GONE);
-        }
-
-        Executors.newSingleThreadExecutor().execute(() -> {
-            List<WorkoutTemplate> templates = db.workoutDao().getAllTemplates();
-            runOnUiThread(() -> {
-                textLoading.setVisibility(View.GONE);
-                recyclerView.setVisibility(View.VISIBLE);
-                
-                adapter = new WorkoutAdapter(templates, new WorkoutAdapter.OnTemplateActionListener() {
-                    @Override
-                    public void onTemplateClick(WorkoutTemplate template) {
-                        Intent intent = new Intent(MainActivity.this, ExerciseActivity.class);
-                        intent.putExtra("TEMPLATE_ID", template.id);
-                        intent.putExtra("TEMPLATE_NAME", template.name);
-                        startActivity(intent);
-                    }
-
-                    @Override
-                    public void onTemplateDelete(WorkoutTemplate template) {
-                        deleteTemplate(template);
-                    }
-                });
-                recyclerView.setAdapter(adapter);
-            });
-        });
-    }
-
-    private void deleteTemplate(WorkoutTemplate template) {
+    private void showDeleteConfirmation(WorkoutTemplate template) {
         new AlertDialog.Builder(this)
                 .setTitle("Delete Template")
                 .setMessage("Are you sure you want to delete '" + template.name + "'?")
-                .setPositiveButton("Delete", (dialog, which) -> {
-                    Executors.newSingleThreadExecutor().execute(() -> {
-                        db.workoutDao().deleteTemplate(template);
-                        runOnUiThread(this::loadTemplates);
-                    });
-                })
+                .setPositiveButton("Delete", (dialog, which) -> viewModel.deleteTemplate(template))
                 .setNegativeButton("Cancel", null)
                 .show();
     }

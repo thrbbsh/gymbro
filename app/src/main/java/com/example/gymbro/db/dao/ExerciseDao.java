@@ -16,9 +16,6 @@ public interface ExerciseDao {
 
     @Query("SELECT * FROM exercises ORDER BY name ASC")
     List<Exercise> getAllExercises();
-    
-    @Query("SELECT * FROM exercises WHERE target = :muscle ORDER BY name ASC")
-    List<Exercise> getExercisesByMuscle(String muscle);
 
     @Query("SELECT COUNT(*) FROM exercises")
     int getExerciseCount();
